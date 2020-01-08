@@ -1,14 +1,6 @@
-class Particle {
-  acceleration;
-  velocity;
-  // position;
-  lifespan;
-  constructor(position) {
-    this.acceleration = p5Data.createVector(0, 0);
-    this.velocity = p5Data.createVector(0, 0);
-    // this.position = position.copy();
-  }
-}
+import { Vector } from "p5";
+
+
 
 class ChargeForceSystem {//物理系统，只负责处理粒子的物理属性。
   constant_charge = 400;

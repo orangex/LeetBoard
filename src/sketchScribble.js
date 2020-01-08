@@ -330,7 +330,7 @@ const sketchScribble = (pInst) => {
 }
 
 
-let p5Scribble = new p5(sketchScribble, 'scribbleSketchHolder');
+export let p5Scribble = new p5(sketchScribble, 'scribbleSketchHolder');
 
 
 
