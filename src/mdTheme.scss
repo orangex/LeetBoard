@@ -1,0 +1,46 @@
+/* Build a Material theme */
+// To begin customizing your theme, modify these variables. By default each theme starts off with our baseline values, so you can easily swap them out.
+
+
+/*  Typography */
+// To change your theme's typography, we recommend importing a font from Google Fonts and setting the global font-family https://fonts.google.com
+
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500');
+$mdc-typography-font-family: unquote("Roboto, sans-serif");
+
+
+/* Shape */
+// The shapes of small, medium, and large components can be themed by overriding the default values. We recommend using our shape customization tool to help you pick your radius values. https://material.io/design/shape/about-shape.html#shape-customization-tool
+
+$mdc-shape-small-component-radius: 4px;
+$mdc-shape-medium-component-radius: 4px;
+$mdc-shape-large-component-radius: 0px;
+
+
+/* Color */
+// To change your theme's color scheme, replace the existing HEX color values with custom HEX color values. Use our color palette generator to help come up with pairings and check your color contrast. https://material.io/design/color/the-color-system.html#tools-for-picking-colors
+
+// Primary colors ($mdc-theme-primary) map to components such as app bars and buttons, while secondary colors ($mdc-theme-secondary) are used as accents on components such as FABs and selection controls.
+
+$mdc-theme-primary: #6200ee;
+$mdc-theme-secondary: #03DAC6;
+
+
+// Theme background ($mdc-theme-background) appears behind scrollable content. Surface color ($mdc-theme-surface) is mapped to the surface of components such as cards, sheets, and menus. Error color ($mdc-theme-error) is used to indicate an error state for components such as text fields provided with inaccurate input.
+
+$mdc-theme-surface: #ffffff;
+$mdc-theme-background: #ffffff;
+$mdc-theme-error: #b00020;
+
+
+// “On-” colors define how text, icons, and strokes are colored in relation to the surface on which they appear. If you are updating these manually, be sure to consider accessible color contrast for the value pairs.
+
+// $mdc-theme-on-primary: #ffffff;
+// $mdc-theme-on-secondary: #ffffff;
+// $mdc-theme-on-error: #ffffff;
+// $mdc-theme-on-surface: #000000;
+
+:export{
+    primaryColor: $mdc-theme-primary;
+    secondaryColor: $mdc-theme-secondary;
+}

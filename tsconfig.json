@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        // "plugins": [
+        //     {
+        //         "name": "typescript-tslint-plugin"
+        //     }
+        // ],
+        "outDir": "./dist/",
+        "noImplicitAny": true,
+        "sourceMap": true,
+        "module": "CommonJS",
+        "target": "ES5",
+        "allowJs": true
+    }
+}
