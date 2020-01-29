@@ -2,12 +2,16 @@ const path = require('path');
 // const HtmlWebpackPlugin = require('html-webpack-plugin');
 // const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const autoprefixer = require('autoprefixer');
-module.exports = {
+const config= {
     mode: "development",
-    entry: ["./src/index.ts","./src/index.scss"],
+    entry: {
+         css:'./src/index.scss',
+        //  web_bundle:'./src/index.ts',
+         crx_bundle:'./src/crx_index.ts'
+    },
 
     output: {
-        filename: 'bundle.js',
+        filename: '[name].js',
         path: path.resolve(__dirname, 'dist')
     },
 
@@ -18,8 +22,8 @@ module.exports = {
     },
     resolve: {
         // Add '.ts' and '.tsx' as resolvable extensions.
-        extensions: [" ",".ts", ".tsx", ".js"],
-        modules:[path.resolve(__dirname, '/src'),'node_modules/']
+        extensions: [" ", ".ts", ".tsx", ".js"],
+        modules: [path.resolve(__dirname, '/src'), 'node_modules/']
     },
     plugins: [
         // new CleanWebpackPlugin(),
@@ -37,17 +41,18 @@ module.exports = {
                     {
                         loader: 'file-loader',
                         options: {
-                            name: 'bundle.css',
+                            name: 'crx_bundle.css',
                         },
                     },
                     { loader: 'extract-loader' },
+             
                     { loader: 'css-loader' },
                     {
                         loader: 'postcss-loader',
                         options: {
-                           plugins: () => [autoprefixer()]
+                            plugins: () => [autoprefixer()]
                         }
-                      },
+                    },
                     {
                         loader: 'sass-loader',
                         options: {
@@ -78,3 +83,5 @@ module.exports = {
         ]
     },
 };
+
+module.exports = config;

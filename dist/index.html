@@ -9,7 +9,8 @@
 </head>
 
 <body>
-  <div id="sketchArea">
+  <div id="leetboard-containter">
+
     <div id="mainSketchHolder" class='in-Sketch-Main'>
       <svg id='insertingIcon' class="icon " aria-hidden="true" style="
       color: #000000;
@@ -17,9 +18,69 @@
       position: absolute;">
         <use id='insertingIconUse' href="#iconshulie"></use>
       </svg>
+
+      <div class="dock " id="maindock">
+        <button class="tool dark-primary-text-color mdc-button mdc-button--unelevated" data-tooltype='insert2DArray'>
+          <div class="tool-surface" data-tooltype='insert2DArray'></div>
+          <svg class="icon mdc-button__icon" aria-hidden="true" data-tooltype='insert2DArray'>
+            <use href="#iconshulie" data-tooltype='insert2DArray'></use>
+          </svg>
+        </button>
+        <button class="tool dark-primary-text-color mdc-button mdc-button--unelevated" id="action-cancel"
+          data-tooltype='cancel'>
+          <div class="tool-surface" data-tooltype='cancel'></div>
+          <svg class="icon mdc-button__icon" aria-hidden="true" data-tooltype='cancel'>
+            <use xlink:href="#iconchexiao" data-tooltype='cancel'></use>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div id="scribbleSketchHolder">
+      <div class="dock " id="scribbledock">
+        <button class="tool dark-primary-text-color mdc-button" id="scribble-handwrite" data-scribbletype='handwrite'>
+          <div class="mdc-button__ripple" data-scribbletype='handwrite'></div>
+          <svg id="icon-scribble-handwrite" class="icon " aria-hidden="true" data-scribbletype='handwrite'>
+            <use xlink:href="#iconqianming" data-scribbletype='handwrite'></use>
+          </svg>
+        </button>
+        <button class="tool dark-primary-text-color mdc-button" id="scribble-rect" data-scribbletype='rect'>
+          <div class="mdc-button__ripple" data-scribbletype='rect'></div>
+          <svg id="icon-scribble-rect" class="icon" aria-hidden="true" data-scribbletype='rect'>
+            <use xlink:href="#iconjuxing" data-scribbletype='rect'></use>
+          </svg>
+        </button>
+        <button class="tool dark-primary-text-color mdc-button" id="scribble-ellipse" data-scribbletype='ellipse'>
+          <div class="mdc-button__ripple" data-scribbletype='ellipse'></div>
+          <svg id="icon-scribble-ellipse" class="icon" aria-hidden="true" data-scribbletype='ellipse'>
+            <use xlink:href="#icontuoyuan1copy" data-scribbletype='ellipse'></use>
+          </svg>
+        </button>
+        <button class="tool dark-primary-text-color mdc-button" id="scribble-arrow" data-scribbletype='arrow'>
+          <div class="mdc-button__ripple" data-scribbletype='arrow'></div>
+          <svg id="icon-scribble-arrow" class="icon " aria-hidden="true" data-scribbletype='arrow'>
+            <use xlink:href="#iconrightbottom" data-scribbletype='arrow'></use>
+          </svg>
+        </button>
+        <button class="tool dark-primary-text-color mdc-button" id="scribble-line" data-scribbletype='line'>
+          <div class="mdc-button__ripple" data-scribbletype='line'></div>
+          <svg id="icon-scribble-line" class="icon" aria-hidden="true" data-scribbletype='line'>
+            <use xlink:href="#iconline" data-scribbletype='line'></use>
+          </svg>
+        </button>
+        <button class="tool dark-primary-text-color mdc-button" id="scribble-text" data-scribbletype='text'>
+          <div class="mdc-button__ripple" data-scribbletype='text'></div>
+          <svg id="icon-scribble-text" class="icon" aria-hidden="true" data-scribbletype='text'>
+            <use xlink:href="#iconwenben" data-scribbletype='text'></use>
+          </svg>
+        </button>
+        <button class="tool dark-primary-text-color mdc-button" id="scribble-empty" data-scribbletype='empty'>
+          <div class="tool-surface" data-tooltype='empty'></div>
+          <svg id="icon-scribble-empty" class="icon" aria-hidden="true" data-scribbletype='empty'>
+            <use xlink:href="#iconqingkong" data-scribbletype='empty'></use>
+          </svg>
+      </div>
+  
     </div>
 
     <button id='mode-switch' class="mdc-button mdc-button--outlined">
@@ -27,73 +88,11 @@
       <svg class="icon dark-primary-text-color" aria-hidden="true" data-action='toggleScribble'>
         <use xlink:href="#iconqiehuan" data-action='toggleScribble'></use>
       </svg>
-      <span class="mdc-button__label">打开涂写图层</span>
+      <span class="mdc-button__label">打开批注图层</span>
     </button>
 
-    <div class="dock " id="maindock">
-      <button class="tool dark-primary-text-color mdc-button mdc-button--unelevated" data-tooltype='insert2DArray'>
-        <div class="tool-surface" data-tooltype='insert2DArray'></div>
-        <svg class="icon mdc-button__icon" aria-hidden="true" data-tooltype='insert2DArray'>
-          <use href="#iconshulie" data-tooltype='insert2DArray'></use>
-        </svg>
-      </button>
-      <!-- <div class=" docksurface" id="action-insert2DArray" >
-
-      </div> -->
-      <button class="tool dark-primary-text-color mdc-button mdc-button--unelevated" id="action-cancel" data-tooltype='cancel'>
-        <div class="tool-surface" data-tooltype='cancel'></div>
-        <svg class="icon mdc-button__icon" aria-hidden="true" data-tooltype='cancel'>
-          <use xlink:href="#iconchexiao" data-tooltype='cancel'></use>
-        </svg>
-      </button>
-    </div>
-
-    <bu/button class="dock " id="scribbledock">
-      <button class="tool dark-primary-text-color mdc-button" id="scribble-handwrite" data-scribbletype='handwrite'>
-        <div class="mdc-button__ripple" data-scribbletype='handwrite'></div>
-        <svg id="icon-scribble-handwrite" class="icon " aria-hidden="true" data-scribbletype='handwrite'>
-          <use xlink:href="#iconqianming" data-scribbletype='handwrite'></use>
-        </svg>
-      </button>
-      <button class="tool dark-primary-text-color mdc-button" id="scribble-rect" data-scribbletype='rect'>
-        <div class="mdc-button__ripple" data-scribbletype='rect'></div>
-        <svg id="icon-scribble-rect" class="icon" aria-hidden="true" data-scribbletype='rect'>
-          <use xlink:href="#iconjuxing" data-scribbletype='rect'></use>
-        </svg>
-      </button>
-      <button class="tool dark-primary-text-color mdc-button" id="scribble-ellipse" data-scribbletype='ellipse'>
-        <div class="mdc-button__ripple" data-scribbletype='ellipse'></div>
-        <svg id="icon-scribble-ellipse" class="icon" aria-hidden="true" data-scribbletype='ellipse'>
-          <use xlink:href="#icontuoyuan1copy" data-scribbletype='ellipse'></use>
-        </svg>
-      </button>
-      <button class="tool dark-primary-text-color mdc-button" id="scribble-arrow" data-scribbletype='arrow'>
-        <div class="mdc-button__ripple" data-scribbletype='arrow'></div>
-        <svg id="icon-scribble-arrow" class="icon " aria-hidden="true" data-scribbletype='arrow'>
-          <use xlink:href="#iconrightbottom" data-scribbletype='arrow'></use>
-        </svg>
-      </button>
-      <button class="tool dark-primary-text-color mdc-button" id="scribble-line" data-scribbletype='line'>
-        <div class="mdc-button__ripple" data-scribbletype='line'></div>
-        <svg id="icon-scribble-line" class="icon" aria-hidden="true" data-scribbletype='line'>
-          <use xlink:href="#iconline" data-scribbletype='line'></use>
-        </svg>
-      </button>
-      <button class="tool dark-primary-text-color mdc-button" id="scribble-text" data-scribbletype='text'>
-        <div class="mdc-button__ripple" data-scribbletype='text'></div>
-        <svg id="icon-scribble-text" class="icon" aria-hidden="true" data-scribbletype='text'>
-          <use xlink:href="#iconwenben" data-scribbletype='text'></use>
-        </svg>
-      </button>
-      <button class="tool dark-primary-text-color mdc-button" id="scribble-empty" data-scribbletype='empty'>
-        <div class="tool-surface" data-tooltype='empty'></div>
-        <svg id="icon-scribble-empty" class="icon" aria-hidden="true" data-scribbletype='empty'>
-          <use xlink:href="#iconqingkong" data-scribbletype='empty'></use>
-        </svg>
-      </button>
-    </div>
+    <script src="./bundle.js"></script>
   </div>
-  <script src="./bundle.js"></script>
 </body>
 
 </html>

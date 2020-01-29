@@ -131,9 +131,9 @@ export abstract class BoardScribbleElement extends BaseElement {
     pInst: p5;
     //图画的那个锚点
     onScribbling: Vector | boolean;
-    constructor(public board: any, public datumPoint: Vector) {
+    constructor(public board: typeof BoardScribble, public datumPoint: Vector) {
         super();
-        this.pInst = this.board.pInst;
+        this.pInst = this.board.scribble_pInst;
     }
 
 }

@@ -2,7 +2,9 @@ import { MDCRipple } from '@material/ripple';
 import p5 = require('p5');
 import { BoardDataElement, LBLink, LBNode, Array2D, ConnnectedGraph } from './elements';
 import { Vector } from 'p5';
-import { modeScribbling } from '.';
+
+import { dataSketchContainer, boardToolbar, modeScribbling, buttonSwitchScribbleMode } from './crx_index';
+
 // import  './iconfont'
 export let actionStack = new Array<Function>();
 export let lastNodeTitle: number | string
@@ -14,19 +16,18 @@ export let elementHovering: BoardDataElement;//node and link
 export let linkScribbling: LBLink
 // Array2D 只要
 export let elementsSelected = new Set<BoardDataElement>();
-export let mainDock: p5.Element;
 export let mainSketch: p5.Element;
 export let canvas: p5.Element;
 
 //用来显示插入 cursor icon 的 Element
 export let insertingSVG: p5.Element;
 export let insertingUse: p5.Element;
-export let mainSketchHolder: p5.Element;
+
 export let elements = new Array<BoardDataElement>();//屏幕上所有能看到的元素就是 Node.(Node Group 也是 Node)
 export let inserting: string;
 //sketch 维护着业务需要的全局状态
 const sketchData = (pInst: p5) => {
-
+  pInst.mouseReleased = sketch_mouseReleased;
   function validateQuickInsert(text: string): boolean | Array<string> | string {
     //todo 二维数组
     let t = text.trim();
@@ -44,23 +45,19 @@ const sketchData = (pInst: p5) => {
     return result;
   }
   pInst.setup = function () {
-    canvas = pInst.createCanvas(1000, 1000);
-    canvas.style('position', 'absolute');
-    canvas.class('in-Sketch-Main');
+    canvas = pInst.createCanvas(1920, 1080);
+    canvas.id('data-canvas')
+    canvas.parent(dataSketchContainer)
 
-    initMainDock()
     insertingSVG = pInst.select('#insertingIcon');
     insertingUse = pInst.select('#insertingIconUse')
-
-
-    mainSketchHolder = pInst.select('#mainSketchHolder')
     //click 事件发生在 press 和 Release 之后，有很多不便之处，所以我们用 press 事件代替
     // mainSketchHolder.mouseClicked(sketch_mouseClicked);
-    mainSketchHolder.doubleClicked(sketch_doubleClicked);
-    mainSketchHolder.mousePressed(sketch_mousePressed)
-    mainSketchHolder.mouseReleased(sketch_mouseReleased)
 
-    mainSketchHolder.elt.addEventListener('paste', (ev: ClipboardEvent) => {
+    canvas.doubleClicked(sketch_doubleClicked);
+    canvas.mousePressed(sketch_mousePressed)
+
+    dataSketchContainer.elt.addEventListener('paste', (ev: ClipboardEvent) => {
       let paste = (ev.clipboardData || window.clipboardData).getData('text');
       let result = validateQuickInsert(paste);
       if (!result) return;
@@ -77,23 +74,6 @@ const sketchData = (pInst: p5) => {
 
     //正在插入的元素类型
 
-    mainDock.mouseClicked((ev: MouseEvent) => {
-      let target = ev.target;
-      let type = (target as Element).getAttribute('data-tooltype');
-      switch (type) {
-        case 'cancel':
-          if (actionStack.length !== 0)
-            actionStack.pop()();
-          break;
-        case 'insert2DArray':
-        case 'insertNode':
-          //如果正在 insert 与点选的 type 一致，则取消
-          if (inserting == type) inserting = null;
-          else inserting = type;
-        default:
-          break;
-      }
-    })
   }
 
 
@@ -129,17 +109,19 @@ const sketchData = (pInst: p5) => {
     // maintain(mousePos);
     {
       if (inserting) {
-        insertingSVG.style('visibility', 'visible')
-        insertingSVG.position(mousePos.x, mousePos.y);
-        switch (inserting) {
-          case 'insert2DArray':
-            insertingUse.attribute('href', '#iconshulie');
-            break;
-          default:
-            break;
-        }
+        // pInst.cursor('./cursor_add.jpeg')
+        canvas.style('cursor','copy');
+        // insertingSVG.style('visibility', 'visible')
+        // insertingSVG.position(mousePos.x, mousePos.y);
+        // switch (inserting) {
+        //   case 'insert2DArray':
+        //     insertingUse.attribute('href', '#iconshulie');
+        //     break;
+        //   default:
+        //     break;
+        // }
       } else {
-        insertingSVG.style('visibility', 'hidden')
+        // insertingSVG.style('visibility', 'hidden')
       }
     }
 
@@ -161,16 +143,16 @@ const sketchData = (pInst: p5) => {
     links.forEach((link) => {
       link.draw();
     })
-    if(selectionBoxAnchor){
+    if (selectionBoxAnchor) {
       let lettTopx = Math.min(selectionBoxAnchor.x, pInst.mouseX);
       let leftTopy = Math.min(selectionBoxAnchor.y, pInst.mouseY)
 
       let rightbottomx = Math.max(selectionBoxAnchor.x, pInst.mouseX);
       let rightbottomy = Math.max(selectionBoxAnchor.y, pInst.mouseY);
       pInst.push()
-      pInst.fill(173, 216, 230,128)
-      pInst.stroke(173, 216, 230,0)
-      pInst.rect(lettTopx,leftTopy,rightbottomx-lettTopx,rightbottomy-leftTopy)
+      pInst.fill(173, 216, 230, 128)
+      pInst.stroke(173, 216, 230, 0)
+      pInst.rect(lettTopx, leftTopy, rightbottomx - lettTopx, rightbottomy - leftTopy)
       pInst.pop();
     }
     // system.run(elementGroups);
@@ -440,8 +422,7 @@ function insertBinarytreeRandom(limitL: number, limitR: number, y: number, num: 
   return node;
 }
 
-export let pInst: p5 = new p5(sketchData, 'mainSketchHolder');
-mainDock = pInst.select('#maindock');
+export let pInst: p5 = new p5(sketchData, document.getElementById("dataSketch-container"));
 // let scribble = new Scribble(p5Data);
 // scribble.scribbleFillingCircle = function (x, y, r, gap, angle) {
 //   let vertexV = p5Data.createVector(r, 0);
@@ -583,5 +564,25 @@ let thisModule = exports;
 //   mousePos,
 //   union
 // }
+
+
+export let onToolbarClicked = function (ev: MouseEvent) {
+  if (modeScribbling) return;
+  let target = ev.target;
+  let type = (target as Element).getAttribute('data-tooltype');
+  switch (type) {
+    case 'cancel':
+      if (actionStack.length !== 0)
+        actionStack.pop()();
+      break;
+    case 'insert2DArray':
+    case 'insertNode':
+      //如果正在 insert 与点选的 type 一致，则取消
+      if (inserting == type) inserting = null;
+      else inserting = type;
+    default:
+      break;
+  }
+}
 
 

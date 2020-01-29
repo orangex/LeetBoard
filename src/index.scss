@@ -1,65 +1,154 @@
-@import "../node_modules/normalize.css/normalize.css";
+@import "mdTheme.scss";
+// @import "../node_modules/normalize.css/normalize.css";
 @import "@material/typography/mdc-typography";
 @import "@material/ripple/mdc-ripple";
 @import "@material/button/mdc-button";
 @import "@material/icon-button/mdc-icon-button";
-@import  "mdTheme";
 
-html {
-  height: 100%;
-  body {
+
+// html {
+//   height: 100%;
+// }
+// body{
+//   width: 100%;
+//   height: auto;
+// }
+
+#databoard-containter {
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(rgb(250, 250, 250) 10%, white 90%);
+
+  flex: 1 0 0px;
+
+  #board-toolbar {
+    flex: 0 0 auto;
+
+    position: relative;
+    align-items: center;
     display: flex;
-    width: 100%;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    font-family: $mdc-typography-font-family;
-    // "Comic Sans MS", cursive, sans-serif;
+    flex-direction: row;
+    //跟leetcode 左右平齐
+    height: 40px;
 
-    #sketchArea {
-      position: relative;
-      width: 100%;
-      height: auto;
-      #mainSketchHolder,
-      #scribbleSketchHolder {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-      }
-      #mode-switch{
-        position: absolute;
-        width: auto;
-        height: auto;
-        left: 99%;
-        transform: translateX(-100%);
-        top: 4%;
-        // font-size: 2em;
-        z-index: 2;
 
-      }
-      #maindock{
-        @extend %dock;
-        .mdc-button{
-          @include mdc-button-filled-accessible($mdc-theme-surface);
-
-        }
-      }
-      #scribbledock
-      {
-        @extend %dock;
-        
-      }
+    #board-toolbar-leftsection {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+    #board-toolbar-middlesection {
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-evenly;
     }
 
 
+    #board-toolbar-rightsection {
+      flex: 0 0 auto;
+      justify-content: flex-end;
+      display: flex;
+      flex-direction: row;
+    }
+
+
+    #board-toolbar-leftsection,
+    #board-toolbar-middlesection,
+    #board-toolbar-rightsection  {
+      div {
+        margin: 0 5px;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        // overflow: hidden;
+        button{
+          @include mdc-icon-button-icon-size(18px, 18px);
+          @include mdc-ripple-surface;
+          @include mdc-ripple-radius-unbounded(36px);
+          @include mdc-states-base-color($mdc-theme-primary);
+          @include mdc-states-opacities((hover: .1,press: .4));
+        };
+      }
+    }
+    #board-toolbar-middlesection{
+      div{
+        button {
+          // font-size: 16px;
+          @include mdc-states-opacities((hover: .1, focus: .3,press: .4));
+        }
+      }
+    }
+
+    // .mdc-button {
+    //   @include mdc-button-filled-accessible($mdc-theme-surface);
+    // }
   }
 
+
+  #dataSketch-container {
+    position: relative;
+    overflow: hidden;
+    flex: 1 0 auto;
+
+    canvas {
+      @extend %sentinel
+    }
+  }
 }
 
 
-.tool-surface{
+#scribble-canvas {
+  position: absolute;
+  // Ripple needs content-box as the box sizing and box-sizing: border-box
+  // is often set as a default, so we override that here.
+  // content-box 即，设置的宽高只是内容的，不包括 boarder、 padding 
+  box-sizing: border-box;
+  height: calc(100%-40px);
+  transform: translateY(40px);
+  overflow: hidden;
+}
+#scribble-subdock {
+  position: absolute;
+  bottom: 4px;
+  transform: translate(-50%,0);
+  left: 50%;
+  background-color: $mdc-theme-surface-dark;
+  width: auto;
+  height: 36px;
+  overflow: hidden;
+  z-index: 10000;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  border-radius: 8px;
+  padding-left: 12px;
+  padding-right: 12px;
+  margin-bottom: 8px;;
+}
+// //pInst 创建的元素的 container 
+// #scribbleSketch-containter {
+//   position: absolute;
+//   left: 0px;
+//   top: 0px;
+//   width: 100%;
+//   height: 100%;
+//   // display: flex;
+//   // flex-direction: column-reverse;
+//   // align-items: center;
+//   z-index: 9999;
+
+
+
+
+
+
+  
+// }
+
+.tool-surface {
   @extend %sentinel;
   @include mdc-ripple-surface;
   @include mdc-ripple-radius-bounded(100%);
@@ -68,14 +157,14 @@ html {
 }
 
 .icon {
-  width: 1.5em;
-  height: 1.5em;
-  vertical-align: -0.15em;
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
   fill: currentColor;
   overflow: hidden;
 }
 
-%sentinel{
+%sentinel {
   position: absolute;
   // Ripple needs content-box as the box sizing and box-sizing: border-box
   // is often set as a default, so we override that here.
@@ -85,42 +174,9 @@ html {
   height: 100%;
   overflow: hidden;
 }
-%dock {
-  position: fixed;
-  width: auto;
-  height: 64px;
-  background: $mdc-theme-surface;
-  overflow: hidden;
-  z-index: 10000;
-  left: 50%;
-  bottom: 8px;
-  transform: translateX(-50%);
-  display: flex;
-  justify-content: space-evenly;
-  align-items: center;
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
-  border-bottom-left-radius: 6px;
-  border-bottom-right-radius: 6px;
-  border: solid;
-}
-.subdock {
-  position: fixed;
-  width: auto;
-  height: 36px;
-  overflow: hidden;
-  z-index: 10000;
-  left: 50%;
-  bottom: 80px;
-  transform: translateX(-50%);
-  display: flex;
-  justify-content: space-evenly;
-  align-items: center;
-  border-radius: 8px;
-  padding-left: 12px;
-  padding-right: 12px;
 
-}
+
+
 
 
 
@@ -153,18 +209,6 @@ html {
   border-style: solid;
 }
 
-.tool {
-  width: 64px;
-  height: 64px;
-  flex: initial;
-  // display: flex;
-  // align-items: center;
-  // justify-content: center;
-  /* list-style: none; */
-  /* flex: initial; */
-}
-
-
 
 .transparentInput {
   outline: none;
@@ -178,45 +222,4 @@ html {
   background: rgb(92, 92, 92);
   z-index: 3;
   border-radius: 6px;
-}
-
-
-
-/* Palette generated by Material Palette - materialpalette.com/blue-grey/teal */
-
-.dark-primary-color {
-  background: #455A64;
-}
-
-.default-primary-color {
-  background: #607D8B;
-}
-
-.light-primary-color {
-  background: #CFD8DC;
-}
-
-.accent-color {
-  background: #009688;
-}
-
-.light-primary-text-color {
-  color: #FFFFFF;
-}
-
-.dark-primary-text-color {
-  color: #212121;
-}
-
-.accent-text-color {
-  color: #009688;
-}
-
-.secondary-text-color {
-  color: #757575;
-}
-
-.divider-color {
-  border-color: #BDBDBD;
-  color: rgb(0, 0, 0);
 }
