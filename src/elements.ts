@@ -4,6 +4,10 @@ import { accent_color, md500_red, md500_green, md500_amber } from "./global";
 import * as BoardData from "./sketchData"
 import * as BoardScribble from "./sketchScribble"
 
+const imaginary_color = 'rgba(f,f,f,0.25)';
+const selected_color = '#008000'
+// '#0000ff'
+// '#08c'
 
 interface Coordinate {
     x: number;
@@ -17,9 +21,10 @@ interface Size {
 interface EventConsumer {
 
     //return true/false 决定了会不会阻止浏览器默认行为??? 还是 return 该事件是否被消费
-    hover(mousePos: Vector): boolean//悬停：比如改变指针样式
-    click(clickPos: Vector): boolean
-    doubleClick(clickPos: Vector): boolean
+    // hover(mousePos: Vector): boolean//悬停效果，鼠标、阴影等
+
+    // click(clickPos: Vector): boolean
+    // doubleClick(clickPos: Vector): boolean
     mousePress(pressPos: Vector): boolean
     longPressed(pressPos: Vector): boolean
     mouseRelease(releasePos: Vector): boolean
@@ -35,15 +40,16 @@ abstract class BaseElement implements Drawable {
     abstract draw(): void
 }
 abstract class ResponsiveElement extends BaseElement implements EventConsumer {
-    hover(mousePos: Vector): boolean {
-        return false;
-    }
-    click(clickPos: Vector): boolean {
-        return false;
-    }
-    doubleClick(clickPos: Vector): boolean {
-        return false;
-    }
+
+    // hover(mousePos: Vector): boolean {
+    //     return false
+    // }
+    // click(clickPos: Vector): boolean {
+    //     return false;
+    // }
+    // doubleClick(clickPos: Vector): boolean {
+    //     return false;
+    // }
     mousePress(pressPos: Vector): boolean {
         return false;
     }
@@ -77,7 +83,13 @@ export abstract class BoardDataElement extends ResponsiveElement {
         this.acceleration = this.pInst.createVector(0, 0);
     }
 
-
+    // hover(mousePos: Vector): boolean {
+    //     let hoveringNow = this.posWithin(mousePos);
+    //     if (hoveringNow && !this.within) this.mouseIn()
+    //     if (!hoveringNow && this.within) this.mouseOut();
+    //     this.within = hoveringNow;
+    //     return this.within;
+    // }
     getCenter(): Vector {
         return this.datumPoint
     }
@@ -93,37 +105,70 @@ export abstract class BoardDataElement extends ResponsiveElement {
         this.acceleration.add(force);
     }
 
-    hovering: any
-    // 表示自己是否被选中
+    mouseWithin: boolean
+    // 表示自己是否被选中，即焦点
+
     selected: boolean
-    editing: any
+    editing: boolean
     //拖拽点与元素基准点的相对向量
     dragging: Vector = null;
 
-    mouseWithin: any;
-    //检测某个点在不在该元素内 决定了某个鼠标事件会不会分发到该元素来
-    abstract posHovering(pos: Vector): boolean
+    // mouseWithin: boolean;
+
+    //检测某个点在不在该元素( 主要区域)内 决定了某个鼠标事件会不会分发到该元素来
+    abstract posWithin(pos: Vector): boolean
     abstract posDraggable(pos: Vector): boolean
 
     //检测自己（的中心）是不是在某个矩形区域内
     abstract inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean
 
+
+    abstract posSelectable(pos: Vector): boolean
+
     mousePress(pressPos: Vector): boolean {
-        if (this.posDraggable(pressPos)) {
-            //如果有包括自己在内的多个元素被选中 那么一起移动
-            if (this.board.elementsSelected.has(this))
-                this.board.elementsSelected.forEach((ele) => {
-                    ele.dragging = p5.Vector.sub(ele.datumPoint, pressPos);
-                })
-            //如果自己没被选中 那就移动自己
-            else
-                this.dragging = p5.Vector.sub(this.datumPoint, pressPos);
-            return true;
-        }
+        if (this.pInst.keyIsDown(91) || this.pInst.keyIsDown(17)) {
+            if (this.posWithin) {
+                this.selected = true;
+                return true;
+            }
+        } else
+            if (this.posDraggable(pressPos)) {
+                //如果自己被选中 就和所有一起选中的元素移动
+                if (this.selected)
+                    // if (this.board.elementsSelected.has(this))
+                    this.board.elements.forEach((ele) => {
+                        if (ele.selected == true)
+                            ele.dragging = p5.Vector.sub(ele.datumPoint, pressPos);
+                    })
+
+                // //如果自己没被选中 那就移动自己
+                else
+                //如果自己没被选中 就取消选中所有其他的元素
+                {
+                    this.board.elements.forEach((ele) => {
+                        ele.selected = false
+                    })
+                    this.selected = true;
+                    this.dragging = p5.Vector.sub(this.datumPoint, pressPos);
+                }
+
+                //     
+                return true;
+            } else
+                if (this.posSelectable(pressPos)) {
+                    this.board.elements.forEach((ele) => {
+                        ele.selected = false;
+                    })
+                    this.selected = true;
+                    return true;
+                }
+
         return false;
     }
 
-    abstract draw(): void
+    draw() {
+        this.mouseWithin = this.posWithin(BoardData.mousePos);
+    }
 
 }
 
@@ -176,60 +221,16 @@ export class ConnnectedGraph {
 export class LBNode extends BoardDataElement {
 
     static titleSize = 20;
-    radius = 20;
-    titleInput: p5.Element;
+    radius = 15;
+    // titleInput: p5.Element;
     titleContent: string | number;
     graphBelong: ConnnectedGraph;
     // linkmap = new Map<>();
-    recoverTitleInput(title: string | number) {
-        let input = this.pInst.createInput();
-        // input.class('in-Sketch-Main');
-        input.value(title);
-        input.size(textwidth(this.pInst, LBNode.titleSize, title)+1);
-        input.attribute('disabled', 'true');
-        input.style('outline', 'none');
-        input.style('border', 'none');
-        input.style('backgroundColor', 'transparent');
-        input.style('font-size', `${LBNode.titleSize}px`);
-        input.attribute('maxLength', '20');
-        // input.elt.style.width='AUTO';
-        // input.size(p5.AUTO);
-        // input.elt.styleborderWidth="1px"
-        input.elt.onkeypress = function (ev: any) {
-            if (ev.keyCode === 13) {
-                input.elt.blur();
-            }
-            // input.size(myp5.textWidth(input.value()+'mm'));
-        };
-        input.elt.addEventListener("focusout", () => {
-            input.attribute('disabled', 'true');
-            // input.elt.disabled = true;
-            this.editing = false;
-            this.board.lastNodeTitle = input.value();
-            this.titleContent = input.value();
-        });
-        // input.input(() => {
-        //     let contentWidth = myp5.textWidth(input.value());
-        //     input.size(Math.min(contentWidth, this.cellWidth - 8));
-        // })
-        input.elt.addEventListener("input", () => {
-            let contentWidth = textwidth(this.pInst, LBNode.titleSize, input.value());
-            contentWidth = Math.min(contentWidth, this.radius * 2 - 4);
-            contentWidth = Math.max(contentWidth, 2);
-            input.size(contentWidth);
-        });
-        this.titleInput = input;
-    }
-    onDelete() {
-        this.titleInput.remove();
-    }
-    onRecover() {
-        this.recoverTitleInput(this.titleContent);
-    }
+
     constructor(board: any, datumPoint: Vector, title?: string | number) {
         super(board, datumPoint);
         this.titleContent = title;
-        this.onRecover();
+        // this.onRecover();
     }
 
     getCenter(): p5.Vector {
@@ -239,8 +240,9 @@ export class LBNode extends BoardDataElement {
     inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean {
         return this.datumPoint.x >= leftTop.x && this.datumPoint.y >= leftTop.y && this.datumPoint.x <= rightBottom.x && this.datumPoint.y <= rightBottom.y
     }
-    posHovering(pos: Vector): boolean {
-        return p5.Vector.dist(pos, this.datumPoint) < this.radius + 8;
+
+    posWithin(pos: Vector): boolean {
+        return p5.Vector.dist(pos, this.datumPoint) < this.radius + 10;
     }
     //isPosSelectable
     posSelectable(mousePos: Vector) {
@@ -248,124 +250,168 @@ export class LBNode extends BoardDataElement {
     }
 
     posDraggable(mousePos: Vector) {
-        return this.posHovering(mousePos) && !this.posSelectable(mousePos);
-    }
-
-    posEditable(mousePos: Vector) {
-        return this.posHovering(mousePos)
-    }
-
-    longPressed(pressPos: Vector): boolean {
-        console.log('node longpressed')
-        if (!this.posHovering(pressPos)) return false
-        if(!this.posSelectable(pressPos)) return false;
-        this.board.elementsSelected.clear()
-        this.graphBelong.nodes.forEach((node) => {
-            this.board.elementsSelected.add(node)
-        })
+        if(!this.posWithin(mousePos))  return false;
+        if(this.posSelectable(mousePos)) return false;
         return true;
     }
 
+    posEditable(mousePos: Vector) {
+        return this.posWithin(mousePos)
+    }
+
+    // longPressed(pressPos: Vector): boolean {
+    //     console.log('node longpressed')
+    //     if (!this.posWithin(pressPos)) return false
+    //     if (!this.posSelectable(pressPos)) return false;
+    //     //选中连通图内所有元素
+    //     this.graphBelong.nodes.forEach((node) => {
+
+    //     })
+    //     return true;
+    // }
+    pressTime: number = 0;
+    pressTimeoutID: number
     mousePress(pressPos: Vector): boolean {
+        if (!this.mouseWithin) return false;
+
         console.log('node pressed')
-        if (super.mousePress(pressPos)) return true;
-        if (this.posHovering(pressPos) && this.pInst.keyIsDown(67)) {
-            let linkCreating = new LBLink(this.board, this, this.board.mousePos, true)
-            linkCreating.onScribbling = true;
-            this.board.links.add(linkCreating);
-            return true;
+
+
+
+        if (this.pressTime == 1) {
+            clearTimeout(this.pressTimeoutID)
+            if (this.posEditable(pressPos)) {
+                this.edit()
+            }
+            this.pressTime = 0;
+        } else {
+            this.pressTime++;
+            this.pressTimeoutID = window.setTimeout(() => {
+                this.pressTime=0;
+                //l 键
+                if (super.mousePress(pressPos)) return true;
+                if (this.posWithin(pressPos) && this.pInst.keyIsDown(76)) {
+                    let linkCreating = new LBLink(this.board, this, this.board.mousePos, true)
+                    linkCreating.onScribbling = "end";
+                    // this.board.links.add(linkCreating);
+                    this.board.elements.push(linkCreating)
+                    return true;
+                }
+            }, 150)
         }
-        return false
+
+
+        return true
     }
     mouseRelease(releasePos: Vector) {
         console.log('node release')
-        if (this.posHovering(releasePos)) {
-            if (this.board.linkScribbling) {
-                this.board.linkScribbling.onScribbling = false;
-                //只有落下的那一刻才去维护更新图
-                this.board.union(this.board.linkScribbling.start as LBNode, this);
-                return true;
-            }
+        if (this.posWithin(releasePos)) {
+            if (this.board.elements.some((ele) => {
+                if (ele instanceof LBLink && ele.onScribbling) {
+                    ele.onScribbling = null;
+                    if (ele.start instanceof LBNode && ele.end instanceof LBNode)
+                        this.board.union(ele.start, ele.end)
+                    return true;
+                }
+            }))
+                return true
         }
         return false;
     }
 
-    hover(mousePos: Vector): boolean {
-        if (!this.posHovering(mousePos)) return false;
 
-        if (this.posDraggable(this.board.mousePos)) {
-            this.pInst.cursor(this.pInst.MOVE);
-        }
-        return true;
-    }
-    click(clickPos: Vector) {
-        console.log('node clicked')
-        if (!this.posHovering(clickPos)) return false;
+    // doubleClick(clickPos: Vector) {
+    //     console.log('node double clicked')
+    //     if (!this.posWithin(clickPos)) return false;
+    //     if (this.posEditable(this.board.mousePos)) {
 
-        if (this.posSelectable(this.board.mousePos)) {
-            //mac 91:meta/cmd ,windows 17:control
-            if (this.pInst.keyIsDown(91) || this.pInst.keyIsDown(17))
-                this.board.elementsSelected.add(this)
-            else {
-                this.board.elementsSelected.clear();
-                this.board.elementsSelected.add(this)
-            }
-            // this.selected = true;
-            //todo 在此访问全局 or 上层自己维护
-            // elementsSelected.
-        } else {
-
-        }
-        return true;
-    }
-    doubleClick(clickPos: Vector) {
-        console.log('node double clicked')
-        if (!this.posHovering(clickPos)) return false;
-        if (this.posEditable(this.board.mousePos)) {
-            this.edit()
-            //todo 在此访问全局 or 上层自己维护
-            // elementsSelected.
-        } else {
-        }
-        return true;
-    }
+    //         //todo 在此访问全局 or 上层自己维护
+    //         // elementsSelected.
+    //     } else {
+    //     }
+    //     return true;
+    // }
 
     edit() {
         if (!this.editing) {
             this.editing = true;
-            this.titleInput.attribute('disabled', 'false');
-            this.titleInput.elt.focus();
-            this.titleInput.elt.select();
+            let input = this.board.editInput;
+            (input.elt as HTMLInputElement).maxLength = 6;
+            input.elt.onkeypress = (ev: any) => {
+                if (ev.keyCode === 13 || ev.which === 13) {
+                    //只有按回车才能算编辑完成
+                    this.titleContent = (input.elt as HTMLInputElement).value;
+                    this.editing = false;
+                    input.hide();
+                    // (input.elt as HTMLInputElement).blur();
+                }
+            };
+            window.setTimeout(()=>{
+                input.show()
+                input.elt.focus();
+                (input.elt as HTMLInputElement).onblur = () => {
+                    this.editing = false;
+                    input.hide()
+                };
+            },100)
+    
+
+            input.value(this.titleContent);
+            (input.elt as HTMLInputElement).select()
+            input.show();
+            input.elt.focus();
+            // this.titleInput.attribute('disabled', 'false');
+            // this.titleInput.elt.focus();
+            // this.titleInput.elt.select();
         }
     }
     draw() {
-        if(this.dragging ){
+        super.draw();
+        if (this.dragging) {
             this.datumPoint = p5.Vector.add(this.board.mousePos, this.dragging);
         }
-        this.selected = this.board.elementsSelected.has(this)
+
+        if (this.posDraggable(this.board.mousePos)) {
+            this.pInst.cursor(this.pInst.MOVE);
+        }
+        // this.selected = this.board.elementsSelected.has(this)
         if (this.selected) {
             this.pInst.push();
-            this.pInst.stroke(0, 0, 0);
+            this.pInst.stroke(selected_color);
             this.pInst.strokeWeight(3.5);
             this.pInst.ellipse(this.datumPoint.x, this.datumPoint.y, (this.radius + 1) * 2, (this.radius + 1) * 2);
             this.pInst.pop();
-        } else {
+        }
+        {
             this.pInst.push();
             this.pInst.stroke(108, 108, 108);
             this.pInst.strokeWeight(1.25);
             this.pInst.ellipse(this.datumPoint.x, this.datumPoint.y, this.radius * 2, this.radius * 2);
             this.pInst.pop();
         }
-        this.titleInput.position(Math.floor(this.datumPoint.x - (this.titleInput.size() as Size).width / 2), this.datumPoint.y - (this.titleInput.size() as Size).height / 2);
+        if (this.editing)
+            BoardData.editInput.position(Math.floor(this.datumPoint.x - (BoardData.editInput.size() as Size).width / 2), this.datumPoint.y + (BoardData.editInput.size() as Size).height / 2)
+        this.pInst.push()
+        this.pInst.textAlign(this.pInst.CENTER, this.pInst.CENTER);
+        this.pInst.strokeWeight(0.3)
+        this.pInst.textFont('Roboto');
+        this.pInst.text(this.titleContent, this.getCenter().x, this.getCenter().y)
+        this.pInst.pop();
+
     }
 }
 export class LBLink extends BoardDataElement {
-    inSelectionBox(leftTop: p5.Vector, rightBottom: p5.Vector): boolean {
+    posSelectable(pos: p5.Vector): boolean {
         return false
+    }
+    inSelectionBox(leftTop: p5.Vector, rightBottom: p5.Vector): boolean {
+        let midx = (this.startV.x + this.endV.x) / 2
+        let midy = (this.startV.y + this.endV.y) / 2
+        return (midx >= leftTop.x && midx <= rightBottom.x && midy >= leftTop.y && midy <= rightBottom.y)
     }
     titleInput: p5.Element;
     title: string | number;
-    onScribbling = false;
+    onScribbling: 'start' | 'end';
     get startV() {
         let startV: Vector, endV: Vector;
         if (this.start instanceof LBNode) {
@@ -423,35 +469,63 @@ export class LBLink extends BoardDataElement {
         return false
     }
 
-    posHovering(mousePos: Vector): boolean {
+    posWithin(mousePos: Vector): boolean {
         //正在涂画时 不应视为 hovering
-        if (this.onScribbling) return false;
+        // if (this.onScribbling) return false;
+        //底
         let base = p5.Vector.sub(this.endV, this.startV);
+
         let v = p5.Vector.sub(mousePos, this.startV);
         // |a cross b|= |a||b|sina 求出高 也就是点到线距离
-        let dist = p5.Vector.cross(base, v).mag() / base.mag();
+        let dist = Math.abs(p5.Vector.cross(base, v).mag()) / base.mag();
         // |a dot b|= |a||b|cosa 求出斜边在线上的投影
         let cast = p5.Vector.dot(base, v) / base.mag();
-        return dist < 2 && cast >= 0 && cast <= v.mag();
+
+        return dist < 10 && cast >= -6 && cast <= base.mag() + 6;
     }
-    click(clickPos: Vector): boolean {
-        if (!this.posHovering(clickPos)) {
-            return false;
+
+    posDraggableEnd(pos: Vector): 'start' | 'end' {
+        if (p5.Vector.dist(pos, this.startV) < 12) return 'start'
+        if (p5.Vector.dist(pos, this.endV) < 12) return 'end'
+        return null
+    }
+    posChangeDirection(pos: Vector): boolean {
+        if (!this.posWithin(pos)) return false;
+        if (this.posDraggableEnd(pos)) return false;
+        return true;
+    }
+
+    mousePress(pressPos: Vector): boolean {
+        if(!this.mouseWithin) return false;
+        if (super.mousePress(pressPos)) return true;
+        if (this.posChangeDirection(pressPos)) {
+            this.nextDirection();
+            return true;
         }
-        this.nextDirection();
-        return true;
 
+        let whichEnd = this.posDraggableEnd(pressPos);
+        switch (whichEnd) {
+            case 'start':
+            case 'end':
+                this.onScribbling = whichEnd;
+                return true;
+            case null:
+                return false;
+        }
+        return false;
     }
-
-    hover(mousePos: Vector): boolean {
-        if (!this.posHovering(mousePos)) return false
-        return true;
-    }
+    // hover(mousePos: Vector): boolean {
+    //     if(this.posChangeDirection(mousePos)){
+    //         this.pInst.cursor(this.pInst.HAND)
+    //         return true;
+    //     }
+    //     return false;
+    // }
 
     nextDirection() {
-        if (this.direction)
+        if (this.direction == true)
             this.direction = false
-        else if (!this.direction)
+        else if (this.direction == false)
             this.direction = null;
         else if (this.direction == null)
             this.direction = true
@@ -460,32 +534,50 @@ export class LBLink extends BoardDataElement {
 
     // }
     draw() {
-        if (this.onScribbling) {
-
-            //鼠标拖动画线时  如果悬停在另外的 Node 上，应暂时显示 Node 与 Node 连线的效果
-            if (this.board.elementHovering && this.board.elementHovering instanceof LBNode && this.board.elementHovering !== this.start) {
-                this.end = this.board.elementHovering
-                this.direction = true;
-            } else {
-                if (this.end instanceof LBNode)
-                    this.end = this.board.mousePos.copy()
-                else
-                    this.end.set(this.pInst.mouseX, this.pInst.mouseY);
-            }
+        super.draw();
+        if (this.posChangeDirection(BoardData.mousePos)) {
+            this.pInst.cursor(this.pInst.HAND)
         }
+        if (this.onScribbling) {
+            //鼠标拖动画线时  如果悬停在另外的 Node 上，应暂时显示 Node 与 Node 连线的效果
+            //elementHovering重叠了 有多个
+
+            if (this.board.nodeHovering) {
+                if (this.onScribbling == 'start' && this.board.elementHovering !== this.end)
+                    this.start = this.board.nodeHovering
+                else if (this.onScribbling == 'end' && this.board.elementHovering !== this.start)
+                    this.end = this.board.nodeHovering
+            } else {
+                if (this.onScribbling == 'start') this.start = this.board.mousePos.copy();
+                else if (this.onScribbling == 'end') this.end = this.board.mousePos.copy();
+            }
+
+            // if (this.end instanceof LBNode)
+            //     this.end = this.board.mousePos.copy()
+            // else
+            //     this.end.set(this.pInst.mouseX, this.pInst.mouseY);
+
+        }
+
+
         this.pInst.push();
         this.pInst.stroke('black');
-        this.pInst.strokeWeight(3);
+        this.pInst.strokeWeight(1.5);
         this.pInst.fill('black');
 
         //shape.draw();
-        if (!(this.end instanceof LBNode) || this.direction == true)
+        if (this.direction == true)
             this.board.drawArrow(this.startV, p5.Vector.sub(this.endV, this.startV));
-        else if (!(this.start instanceof LBNode) || this.direction == false)
+        else if (this.direction == false)
             this.board.drawArrow(this.endV, p5.Vector.sub(this.startV, this.endV));
         else
             this.pInst.line(this.startV.x, this.startV.y, this.endV.x, this.endV.y);
         this.pInst.pop();
+        if (this.mouseWithin && !this.onScribbling) {
+            this.pInst.ellipse(this.startV.x, this.startV.y, 8, 8)
+            this.pInst.ellipse(this.endV.x, this.endV.y, 8, 8)
+        }
+
 
         let normalV = p5.Vector.sub(this.endV, this.startV).rotate(90).setMag(10);
         if (normalV.x < 0)
@@ -498,13 +590,30 @@ export class LBLink extends BoardDataElement {
 
 }
 
-export class Array2D extends BoardDataElement {
-    inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean {
+interface Selected_Column {
+    kind: 'column';
+    colIndex: number
+}
+interface Selected_Row {
+    kind: 'row';
+    rowIndex: number
+}
+interface Selected_Cell {
+    kind: 'cell';
+    rowIndex: number;
+    colIndex: number
+}
+export class LBMap extends BoardDataElement {
+    posSelectable(pos: p5.Vector): boolean {
+        return false;
+    }
+
+    inSelectionBox(leftTop: p5.Vector, rightBottom: p5.Vector): boolean {
         let center = {
             x: this.leftTop.x + this.width / 2,
             y: this.leftTop.y + this.height / 2
         }
-        return center.x >= leftTop.x && center.y >= leftTop.y && center.x <= rightBottom.x && center.y >= rightBottom.y
+        return center.x >= leftTop.x && center.y >= leftTop.y && center.x <= rightBottom.x && center.y <= rightBottom.y
     }
 
     center: Vector;
@@ -512,19 +621,394 @@ export class Array2D extends BoardDataElement {
         return this.center.set(this.leftTop.x + this.width / 2, this.leftTop.y + this.height / 2);
     }
 
+    // innerSelected: Array2D.Array2DPointer | { rowIndex: number; colIndex: number }
+
+    //行号列号是绘制的结果，数据以 content[0][0]为左上定点。
+    cellWidth = 30;
+    cellHeight = 30;
+    title: string | number;
+    // cellContentInput: Array<Array<p5.Element>>;
+    graphBelong: ConnnectedGraph;
+    // children = [];
+    innerSelected: Selected_Column | Selected_Cell
+    get maxRadius() {
+
+        return Math.max(this.height, this.width) / 2;
+    }
+
+    longtimeHover = false;
+    longHoverTimeoutID: number;
+
+    // colNum:number=4;
+    keys = new Array<string>();
+    values = new Array<string>();
+    constructor(board: typeof BoardData, pos: Vector, public colNum: number = 4) {
+        super(board, pos);
+        this.center = this.pInst.createVector();
+        this.keys.length = colNum;
+        this.keys.fill('');
+        this.values.length = colNum;
+        this.values.fill('');
+    }
+
+    // posWhich(mousePos: Vector): 'LTHA' | 'Anchor' | Array2D.Array2DPointer | { rIndex: number; cIndex: number } | 'DragArea' {
+    //     return;
+    // }
+
+    get width(): number {
+        return this.colNum * this.cellWidth;
+    }
+    get height(): number {
+        return 2 * this.cellHeight;
+    }
+    get leftTop(): Coordinate {
+        return this.datumPoint;
+    }
+    leftTopOfCell(row: number, col: number): Coordinate {
+        return {
+            x: this.leftTop.x + col * this.cellWidth,
+            y: this.leftTop.y + row * this.cellHeight,
+        }
+    }
+
+    // get isSelected() {
+    //     return this.selected;
+    // }
+
+    draw() {
+
+        super.draw()
+        if (this.dragging) {
+            this.datumPoint = p5.Vector.add(this.board.mousePos, this.dragging);
+        }
+        let rIndex = Math.floor((BoardData.mousePos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((BoardData.mousePos.x - this.leftTop.x) / this.cellWidth);
+        // this.pInst.randomSeed(this.id);
+        // this.selected = this.board.elementsSelected.has(this);
+        if (this.mouseWithin && !this.dragging) {
+            this.pInst.push();
+            this.pInst.stroke('rgba(0,0,0,0.5)');
+            // this.pInst.strokeWeight(1)
+            this.pInst.line(this.leftTop.x + this.width, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y)
+            this.pInst.line(this.leftTop.x + this.width + this.cellWidth, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
+            this.pInst.line(this.leftTop.x + this.width, this.leftTop.y + this.height, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
+            let tempX = this.leftTopOfCell(1, this.colNum).x + this.cellWidth / 2
+            let tempY = this.leftTop.y + this.cellHeight;
+            this.pInst.line(tempX - this.cellWidth * 0.25, tempY, tempX + this.cellWidth * 0.25, tempY)
+            this.pInst.line(tempX, tempY - this.cellWidth * 0.25, tempX, tempY + this.cellWidth * 0.25)
+            this.pInst.pop();
+        }
+
+        if (this.posAddColumn(BoardData.mousePos))
+            this.pInst.cursor(this.pInst.HAND)
+        if (this.posSelectColumn(BoardData.mousePos)!==null) {
+            this.pInst.cursor('s-resize')
+        }
+        if(this.posDraggable(BoardData.mousePos)){
+            this.pInst.cursor(this.pInst.MOVE)
+        }
+
+
+        // this.pInst.line(this.leftTop.x+this.width+this.cellWidth,this.leftTop.y,this.leftTop.x+this.width+this.cellWidth,this.leftTop.y+this.height)
+
+
+
+        for (let i = 0; i <= 2; i++) {
+            this.pInst.line(this.leftTop.x, this.leftTop.y + i * this.cellHeight, this.leftTop.x + this.width, this.leftTop.y + i * this.cellHeight);
+        }
+        for (let i = 0; i <= this.colNum; i++) {
+            this.pInst.line(this.leftTop.x + i * this.cellWidth, this.leftTop.y, this.leftTop.x + i * this.cellWidth, this.leftTop.y + this.height);
+        }
+        // this.pInst.line(this.leftTop.x+this.width,this.leftTop.y,this.leftTop.x+this.width+this.cellWidth,this.leftTop.y)
+
+
+
+        this.pInst.push();
+        this.pInst.stroke(selected_color);
+        this.pInst.strokeWeight(2.8);
+        this.pInst.noFill();
+        if (this.selected)
+            this.pInst.rect(this.leftTop.x, this.leftTop.y, this.width, this.height);
+        //todo 换个颜色
+        if (this.innerSelected) {
+            switch (this.innerSelected.kind) {
+
+                case 'cell':
+                    let cellLeftTop = this.leftTopOfCell(this.innerSelected.rowIndex, this.innerSelected.colIndex)
+                    this.pInst.rect(cellLeftTop.x, cellLeftTop.y, this.cellWidth, this.cellHeight);
+                    break;
+                case 'column':
+                    let temp = this.leftTopOfCell(0, this.innerSelected.colIndex)
+                    this.pInst.rect(temp.x, temp.y, this.cellWidth, this.cellHeight * 2);
+            }
+        }
+
+
+        this.pInst.pop();
+
+        this.pInst.push()
+        this.pInst.strokeWeight(0.3)
+        this.pInst.textFont('Roboto');
+        this.pInst.textAlign(this.pInst.CENTER, this.pInst.CENTER);
+        for (let i = 0; i < this.keys.length; i++) {
+            let tl = this.leftTopOfCell(0, i);
+            this.pInst.text(this.keys[i], tl.x, tl.y, this.cellWidth, this.cellHeight)
+            tl = this.leftTopOfCell(1, i);
+            this.pInst.text(this.values[i], tl.x, tl.y, this.cellWidth, this.cellHeight)
+
+        }
+        this.pInst.textAlign(this.pInst.RIGHT, this.pInst.CENTER);
+        let tl = this.leftTopOfCell(0, 0);
+        this.pInst.text("Keys", tl.x - 2, tl.y + this.cellHeight / 2);
+        tl = this.leftTopOfCell(1, 0);
+        this.pInst.text("Values", tl.x - 2, tl.y + this.cellHeight / 2);
+        this.pInst.pop()
+        // this.titleInput.position(titleX - Math.floor((this.titleInput.size() as Size).width / 2), titleY - (this.titleInput.size() as Size).height / 2);
+    }
+    posSelectColumn(pos: Vector): number {
+        if (!this.mouseWithin) return null;
+        let rIndex = Math.floor((pos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((pos.x - this.leftTop.x) / this.cellWidth);
+        if (rIndex == -1 && cIndex >= 0 && cIndex < this.colNum) return cIndex
+        return null;
+    }
+    posAddColumn(pos: Vector): boolean {
+        let rIndex = Math.floor((pos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((pos.x - this.leftTop.x) / this.cellWidth);
+        return (cIndex == this.colNum && (rIndex == 0 || rIndex == 1))
+    }
+    //进入编辑状态
+    edit(rIndex: number, cIndex: number) {
+        this.editing = true;
+        this.innerSelected = {
+            kind: 'cell',
+            rowIndex: rIndex,
+            colIndex: cIndex,
+        }
+        let input = this.board.editInput;
+        (input.elt as HTMLInputElement).maxLength = 6;
+        input.elt.onkeypress = (ev: any) => {
+            if (ev.keyCode === 13 || ev.which === 13) {
+                //只有按回车才能算编辑完成
+                if (rIndex == 0) this.keys[cIndex] = (input.elt as HTMLInputElement).value;
+                if (rIndex == 1) this.values[cIndex] = (input.elt as HTMLInputElement).value;
+                this.editing = false;
+                input.hide();
+                // (input.elt as HTMLInputElement).blur();
+            }
+        };
+        window.setTimeout(()=>{
+            input.show()
+            input.elt.focus();
+            (input.elt as HTMLInputElement).onblur = () => {
+                this.editing = false;
+                input.hide()
+            };
+        },100)
+        // (input.elt as HTMLInputElement).onblur = () => {
+        //     this.editing = false;
+        //     input.hide();
+        // };
+        if (rIndex == 0)
+            input.value(this.keys[cIndex]);
+        else
+            input.value(this.values[cIndex]);
+        (input.elt as HTMLInputElement).select()
+        input.show();
+        input.elt.focus();
+
+        let lt = this.leftTopOfCell(rIndex, cIndex);
+        this.board.editInput.position(lt.x + this.cellWidth / 2 - Math.floor((input.size() as any).width / 2), lt.y + this.cellHeight + 2)
+
+    }
+    //判定选中 return 该 pos上是否成功选中
+    selectCell(mousePos: Vector) {
+        let rIndex = Math.floor((mousePos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
+        if (rIndex < 0 || rIndex >= 2 || cIndex < 0 || cIndex >= this.colNum) return false;
+
+        //否则选中的是当前 cell
+        this.innerSelected = {
+            kind: 'cell',
+            rowIndex: rIndex,
+            colIndex: cIndex,
+        }
+        return true;
+    }
+
+    //判定能否开始拖拽
+    drag(mousePos: Vector) {
+        if (!this.posDraggable(mousePos)) return false;
+        return true;
+    }
+    moveSelected(key: 'up' | 'down' | 'left' | 'right' | 'enter' | 'tab') {
+        if (this.editing) return false;
+        if (!this.innerSelected || this.innerSelected.kind !== 'cell') return false;
+
+        switch (key) {
+            case 'up':
+                this.innerSelected.rowIndex = Math.max(this.innerSelected.rowIndex - 1, 0);
+                break;
+            case 'down':
+            case 'enter':
+                // this.cellContentInput[this.innerSelected.rowIndex][this.innerSelected.colIndex].elt.blur();
+                this.innerSelected.rowIndex = Math.min(this.innerSelected.rowIndex + 1, 2 - 1);
+                break;
+            case 'left':
+                this.innerSelected.colIndex = Math.max(this.innerSelected.colIndex - 1, 0);
+                break;
+            case 'right':
+            case 'tab':
+                this.innerSelected.colIndex = Math.min(this.innerSelected.colIndex + 1, this.colNum - 1);
+                break;
+
+            default:
+                break;
+        }
+        return true;
+    }
+
+    // private posCellSelectable(mousePos: Vector) {
+    //     if (this.posDraggable(mousePos)) return false;
+    //     return (mousePos.x >= this.leftTop.x && mousePos.x <= this.leftTop.x + this.width && mousePos.y >= this.leftTop.y && mousePos.y <= this.leftTop.y + this.height);
+    // }
+    //其实应该剔除左上角的那个 anchor
+    posDraggable(mousePos: Vector) {
+        // if (this.posAnchor(mousePos)) return false;
+        if (!this.mouseWithin) return false;
+        let c = 6;
+        return (Math.abs(mousePos.x - this.leftTop.x) <= c && mousePos.y >= this.leftTop.y - c && mousePos.y <= this.leftTop.y + this.height + c)
+            || (Math.abs(mousePos.x - this.leftTop.x - this.width) <= c && mousePos.y >= this.leftTop.y - c && mousePos.y <= this.leftTop.y + this.height + c)
+            || (Math.abs(mousePos.y - this.leftTop.y) <= c && mousePos.x >= this.leftTop.x - c && mousePos.x <= this.leftTop.x + this.width + c)
+            || (Math.abs(mousePos.y - this.leftTop.y - this.height) <= c && mousePos.x >= this.leftTop.x - c && mousePos.x <= this.leftTop.x + this.width + c)
+
+    }
+
+    // private posAnchor(mousePos: Vector): boolean {
+    //     if (Math.abs(mousePos.x - this.leftTop.x) <= 6 && Math.abs(mousePos.y - this.leftTop.y) <= 6) {
+    //         return true;
+    //     }
+    //     return false;
+    // }
+
+    posWithin(mousePos: Vector) {
+        let c = this.cellWidth / 2;
+        let mainArea = (mousePos.x >= this.leftTop.x - c && mousePos.x <= this.leftTop.x + (this.mouseWithin ? this.cellWidth : 0) + this.width + c && mousePos.y >= this.leftTop.y - c && mousePos.y <= this.leftTop.y + this.height + c)
+        return mainArea
+        // || this.addtionArea.posHovering(mousePos);
+    }
+
+    pressTime: number = 0;
+    pressTimeoutID: number
+
+    mousePress(pressPos: Vector) {
+        if (!this.mouseWithin) return false;
+
+        if (this.pressTime == 1) {
+            clearTimeout(this.pressTimeoutID)
+            this.doubleClick(pressPos)
+            this.pressTime = 0;
+        } else {
+            this.pressTime++;
+            this.pressTimeoutID = window.setTimeout(() => {
+                this.pressTime=0;
+                if (super.mousePress(pressPos)) return true;
+                if (this.posAddColumn(pressPos)) {
+                    this.colNum++
+                    this.keys.push('');
+                    this.values.push('');
+                    return true;
+                }
+                if (this.posSelectColumn(pressPos)!==null) {
+                    this.innerSelected = {
+                        kind: 'column',
+                        colIndex: this.posSelectColumn(pressPos)
+                    }
+                    this.selected = false;
+                    return true;
+                }
+                if (this.posDraggable(pressPos)) return true;
+
+                return this.selectCell(pressPos);
+            }, 120)
+        }
+        return true;
+
+    }
+
+
+    doubleClick(mousePos: Vector) {
+        if (!this.posWithin(mousePos)) return false;
+        let rIndex = Math.floor((mousePos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
+        if (rIndex < 0 || rIndex >= 2 || cIndex < 0 || cIndex >= this.colNum) return false;
+
+        this.edit(rIndex, cIndex)
+        return true;
+    }
+
+    keyPressed(keyCode: number) {
+
+        switch (keyCode) {
+            //暂时回车和 down 做一样处理
+            case 40://arrow down 
+                return this.moveSelected('down')
+            case 39://arrow right
+                return this.moveSelected('right')
+            case 38://arrow up
+                return this.moveSelected('up')
+            case 37://arrow left
+                return this.moveSelected('left')
+            case 13://arrow enter
+                return this.moveSelected('enter')
+            case 9://arrow left
+                return this.moveSelected('tab')
+            case 8://backspace
+
+                if (this.innerSelected && this.innerSelected.kind == 'column') {
+                    this.keys.splice(this.innerSelected.colIndex, 1)
+                    this.values.splice(this.innerSelected.colIndex, 1)
+                    this.colNum--;
+                }
+            default:
+                return false;
+                break;
+            //   }
+            // }
+        }
+
+    }
+
+}
+export class LBTable extends BoardDataElement {
+    posSelectable(pos: p5.Vector): boolean {
+        return false;
+    }
+    inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean {
+        let center = {
+            x: this.leftTop.x + this.width / 2,
+            y: this.leftTop.y + this.height / 2
+        }
+        return center.x >= leftTop.x && center.y >= leftTop.y && center.x <= rightBottom.x && center.y <= rightBottom.y
+    }
+
+    center: Vector;
+    getCenter(): p5.Vector {
+        return this.center.set(this.leftTop.x + this.width / 2, this.leftTop.y + this.height / 2);
+    }
 
     // innerSelected: Array2D.Array2DPointer | { rowIndex: number; colIndex: number }
-    innerSelected: any
+    innerSelected: Selected_Row | Selected_Column | Selected_Cell
     //行号列号是绘制的结果，数据以 content[0][0]为左上定点。
-    pointersByCell = new Array<Array<Array<Array2D.Array2DPointer>>>();
-    cellWidth = 60;
-    cellHeight = 60;
+    // pointersByCell = new Array<Array<Array<LBTable.Array2DPointer>>>();
+    cellWidth = 30;
+    cellHeight = 30;
     title: string | number;
     titleInput: p5.Element
-    cellContentInput: Array<Array<p5.Element>>;
-    cellContent = new Array<Array<string | number>>();
+    // cellContentInput: Array<Array<p5.Element>>;
+
     graphBelong: ConnnectedGraph;
-    addtionArea: Array2D.Array2DAdditionArea;
+    // addtionArea: LBTable.Array2DAdditionArea;
     pointersCount = 0;
     // children = [];
     get maxRadius() {
@@ -533,125 +1017,55 @@ export class Array2D extends BoardDataElement {
 
     longtimeHover = false;
     longHoverTimeoutID: number;
-
-    constructor(board: typeof BoardData, pos: Vector, public rowNum: number, public colNum: number) {
+    rowNum: number
+    colNum: number
+    constructor(board: typeof BoardData, pos: Vector, public cellContent: Array<Array<string>>) {
         super(board, pos);
         this.center = this.pInst.createVector();
-        for (let i = 0; i < rowNum; i++) {
-            let currRowContent = new Array<string | number>();
-            let currRowPointers = new Array<Array<Array2D.Array2DPointer>>();
-            for (let j = 0; j < colNum; j++) {
-                // this.pointersByCell[i][j]=new Array<Array2D.Array2DPointer>();
-                currRowContent.push(' ');
-                currRowPointers.push(new Array<Array2D.Array2DPointer>());
+        if (cellContent) {
+            this.rowNum = cellContent.length;
+            let maxCol = 1;
+            cellContent.forEach((row) => {
+                if (row.length > maxCol) maxCol = row.length;
+            })
+            this.colNum = maxCol;
+        } else {
+            this.cellContent = new Array<Array<string>>();
+            this.rowNum = 3;
+            this.colNum = 4;
+            // this.cellContent.length = this.rowNum;
+            for (let i = 0; i < this.rowNum; i++) {
+                let currRowContent = new Array<string>();
+                currRowContent.length = this.colNum;
+                currRowContent.fill('');
+
+                // let currRowPointers = new Array<Array<LBTable.Array2DPointer>>();
+                // for (let j = 0; j < colNum; j++) {
+                //     // this.pointersByCell[i][j]=new Array<Array2D.Array2DPointer>();
+                //     currRowContent.push(' ');
+                //     currRowPointers.push(new Array<LBTable.Array2DPointer>());
+                // }
+                this.cellContent.push(currRowContent);
             }
-            this.cellContent.push(currRowContent);
-            this.pointersByCell.push(currRowPointers);
-        }
-        this.recover();
-
-        this.addtionArea = new Array2D.Array2DAdditionArea(board, pos, this)
-    }
-    //dom 元素必须删 ，但如果撤销了就得恢复。
-    recover() {
-        this.cellContentInput = new Array<Array<p5.Element>>();
-        for (let i = 0; i < this.rowNum; i++) {
-            let currRowContentInput = new Array<p5.Element>();
-            for (let j = 0; j < this.colNum; j++) {
-                let input = this.pInst.createDiv();
-                input.attribute('contenteditable', 'true');
-                input.attribute('spellcheck', 'false');
-                // input.class('in-Sketch-Main');
-                input.value(this.cellContent[i][j]);
-                input.style('max-width', `${this.cellWidth - 4}px`);
-                input.style('min-width', `2px`);
-                input.style('min-height', `20px`);
-                input.style('max-height', `${this.cellHeight - 4}px`);
-                input.style('overflow', 'auto')
-                input.elt.disabled = true;
-                input.elt.classList.add('transparentInput');
-
-                input.elt.onkeypress = function (e: { keyCode: number; }) {
-                    if (e.keyCode === 13) {
-                        input.elt.blur();
-                    }
-                };
-                input.elt.addEventListener("focusout", () => {
-                    input.attribute('contenteditable', 'false');
-                    this.editing = false;
-                });
-                currRowContentInput.push(input);
-            }
-            this.cellContentInput.push(currRowContentInput);
         }
 
-        {
-            this.titleInput = this.pInst.createInput();
-            this.titleInput.value(this.title);
-            this.titleInput.size(80);
-            // this.title.elt.disabled = true;
-            this.titleInput.style('outline', 'none');
-            this.titleInput.style('border', 'none');
-            this.titleInput.style('font-size', '18px');
-            this.titleInput.style('backgroundColor', 'transparent');
-            this.titleInput.attribute('maxLength', '20');
-            this.titleInput.attribute('placeholder', '未命名');
-            this.titleInput.elt.addEventListener("input", () => {
-                // this.title.elt.style.size=this.title.value().length;
-                let contentWidth = textwidth(this.pInst, 20, this.titleInput.value());
-                this.pInst.push();
-                this.pInst.textSize(18);
-                // input.size()
-                contentWidth = Math.min(contentWidth, this.width - 12);
-                if (contentWidth == 0) contentWidth = 80;
-                // contentWidth=Math.max(contentWidth, 2);// TODO 容纳 placeholer 的最小宽度
-                this.titleInput.size(contentWidth);
-                this.pInst.pop();
-            });
-            this.titleInput.elt.onkeypress = function (e: { keyCode: number; }) {
-                if (e.keyCode === 13) {
-                    this.blur();
-                }
-                // input.size(myp5.textWidth(input.value()+'mm'));
-            };
-            //取巧的做法，不想让这个 input 被纳入到 select-edit 规则中
-            this.titleInput.elt.addEventListener("focus", () => {
-                //标题正在编辑那么元素本体就视为选中
-                this.selected = true;
-                this.editing = true;
-            });
-            this.titleInput.elt.addEventListener("focusout", () => {
-                this.editing = false;
-                this.title = this.titleInput.value();
-            });
-        }
+        // this.recover();
 
+        // this.addtionArea = new LBTable.Array2DAdditionArea(board, pos, this)
     }
-    posWhich(mousePos: Vector): 'LTHA' | 'Anchor' | Array2D.Array2DPointer | { rIndex: number; cIndex: number } | 'DragArea' {
-        return;
-    }
+
+    // posWhich(mousePos: Vector): 'LTHA' | 'Anchor' | LBTable.Array2DPointer | { rIndex: number; cIndex: number } | 'DragArea' {
+    //     return;
+    // }
     mouseIn(): boolean {
-        if (this.pointersCount < 3)//pointer 暂时最多三个
-            this.longHoverTimeoutID = window.setTimeout(() => this.addtionArea.show(), 1000);
-        return false;
+        // if (this.pointersCount < 3)//pointer 暂时最多三个
+        //     this.longHoverTimeoutID = window.setTimeout(() => this.addtionArea.show(), 1000);
+        return true;
     }
     mouseOut() {
-        this.addtionArea.hide()
+        // this.addtionArea.hide()
         clearTimeout(this.longHoverTimeoutID);
-        return false;
-    }
-    hover(mousePos: Vector): boolean {
-        // this.hovering = true;
-        if (this.addtionArea.posHovering(mousePos)) {
-            this.addtionArea.hover(mousePos);
-            return true;
-        } else
-            if (this.posAnchor(mousePos))
-                this.pInst.cursor(this.pInst.HAND)
-            else if (this.posDraggable(mousePos)) {
-                this.pInst.cursor(this.pInst.MOVE);
-            }
-        // return hover;
+        return true;
     }
 
     get width(): number {
@@ -673,10 +1087,81 @@ export class Array2D extends BoardDataElement {
     // get isSelected() {
     //     return this.selected;
     // }
+    posSelectColumn(pos: Vector): number {
+        if (!this.mouseWithin) return null;
+        let rIndex = Math.floor((pos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((pos.x - this.leftTop.x) / this.cellWidth);
+        if (cIndex < 0 || cIndex >= this.colNum || rIndex !== -1) return null;
+        return cIndex;
+    }
+    posSelectRow(pos: Vector): number {
+        if (!this.mouseWithin) return null;
+        let rIndex = Math.floor((pos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((pos.x - this.leftTop.x) / this.cellWidth);
+        if (rIndex < 0 || rIndex >= this.rowNum || cIndex !== -1) return null;
+        return rIndex;
+    }
+    posAddColumn(pos: Vector): boolean {
+        if (!this.mouseWithin) return false;
+        let rIndex = Math.floor((pos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((pos.x - this.leftTop.x) / this.cellWidth);
+        if (rIndex < 0 || rIndex >= this.rowNum || cIndex !== this.colNum) return false;
+        return true
+    }
+    posAddRow(pos: Vector): boolean {
+        if (!this.mouseWithin) return false;
+        let rIndex = Math.floor((pos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((pos.x - this.leftTop.x) / this.cellWidth);
+        if (cIndex < 0 || cIndex >= this.colNum || rIndex !== this.rowNum) return false;
+        return true
+    }
 
     draw() {
+        super.draw()
         // this.pInst.randomSeed(this.id);
-        this.selected = this.board.elementsSelected.has(this);
+        // this.selected = this.board.elementsSelected.has(this);
+
+        if (this.mouseWithin) {
+            // if (this.posAnchor(BoardData.mousePos))
+            //     this.pInst.cursor(this.pInst.HAND)
+            // else 
+            if (this.posDraggable(BoardData.mousePos)) {
+                this.pInst.cursor(this.pInst.MOVE);
+            } else if (this.posSelectColumn(BoardData.mousePos) !== null) {
+                this.pInst.cursor('s-resize')
+            } else if (this.posSelectRow(BoardData.mousePos) !== null) {
+                this.pInst.cursor('e-resize')
+            } else if (this.posAddRow(BoardData.mousePos)) {
+                this.pInst.cursor(this.pInst.HAND)
+            } else if (this.posAddColumn(BoardData.mousePos)) {
+                this.pInst.cursor(this.pInst.HAND)
+            }
+        }
+
+
+        if (this.mouseWithin && !this.dragging) {
+            this.pInst.push();
+            this.pInst.stroke('rgba(0,0,0,0.5)');
+            // this.pInst.strokeWeight(1)
+            this.pInst.line(this.leftTop.x + this.width, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y)
+            this.pInst.line(this.leftTop.x + this.width + this.cellWidth, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
+            this.pInst.line(this.leftTop.x + this.width, this.leftTop.y + this.height, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
+            let tempX = this.leftTop.x + this.width + this.cellWidth / 2
+            let tempY = this.leftTop.y + this.height / 2;
+            this.pInst.line(tempX - this.cellWidth * 0.25, tempY, tempX + this.cellWidth * 0.25, tempY)
+            this.pInst.line(tempX, tempY - this.cellWidth * 0.25, tempX, tempY + this.cellWidth * 0.25)
+
+            this.pInst.line(this.leftTop.x, this.leftTop.y + this.height, this.leftTop.x, this.leftTop.y + this.height + this.cellHeight)
+            this.pInst.line(this.leftTop.x, this.leftTop.y + this.height + this.cellHeight, this.leftTop.x + this.width, this.leftTop.y + this.height + this.cellHeight)
+            this.pInst.line(this.leftTop.x + this.width, this.leftTop.y + this.height, this.leftTop.x + this.width, this.leftTop.y + this.height + this.cellHeight)
+            tempX = this.leftTop.x + this.width / 2
+            tempY = this.leftTop.y + this.height + this.cellHeight / 2;
+
+            this.pInst.line(tempX - this.cellHeight * 0.25, tempY, tempX + this.cellHeight * 0.25, tempY)
+            this.pInst.line(tempX, tempY - this.cellHeight * 0.25, tempX, tempY + this.cellHeight * 0.25)
+            this.pInst.pop();
+        }
+
         if (this.dragging) {
             this.datumPoint = p5.Vector.add(this.board.mousePos, this.dragging);
         }
@@ -687,85 +1172,128 @@ export class Array2D extends BoardDataElement {
         for (let i = 0; i <= this.colNum; i++) {
             this.pInst.line(this.leftTop.x + i * this.cellWidth, this.leftTop.y, this.leftTop.x + i * this.cellWidth, this.leftTop.y + this.height);
         }
-        let pointersCount = [];
-        for (let r = 0; r < this.rowNum; r++) {
-            pointersCount.push([]);
-        }
-        for (let i = 0; i < this.rowNum; i++) {
-            for (let j = 0; j < this.colNum; j++) {
-                this.pointersByCell[i][j].forEach((pointer) => {
-                    pointer.draw();
-                })
-            }
-        }
+        // let pointersCount = [];
+        // for (let r = 0; r < this.rowNum; r++) {
+        //     pointersCount.push([]);
+        // }
+        // for (let i = 0; i < this.rowNum; i++) {
+        //     for (let j = 0; j < this.colNum; j++) {
+        //         this.pointersByCell[i][j].forEach((pointer) => {
+        //             pointer.draw();
+        //         })
+        //     }
+        // }
         this.pInst.push();
-        this.pInst.stroke(accent_color);
+        this.pInst.stroke(selected_color);
         this.pInst.strokeWeight(2.8);
         this.pInst.noFill();
-        if (this.selected)
+        if (this.selected) {
             this.pInst.rect(this.leftTop.x, this.leftTop.y, this.width, this.height);
-        //todo 换个颜色
-        if (this.innerSelected && !(this.innerSelected instanceof Array2D.Array2DPointer)) {
-            let cellLeftTop = this.leftTopOfCell(this.innerSelected.rowIndex, this.innerSelected.colIndex)
-            this.pInst.rect(cellLeftTop.x, cellLeftTop.y, this.cellWidth, this.cellHeight);
         }
+        //todo 换个颜色
+        if (this.innerSelected) {
+            // this.pInst.stroke(selected_color);
+            switch (this.innerSelected.kind) {
+                case 'cell':
+                    let cellLeftTop = this.leftTopOfCell(this.innerSelected.rowIndex, this.innerSelected.colIndex)
+                    this.pInst.rect(cellLeftTop.x, cellLeftTop.y, this.cellWidth, this.cellHeight);
+                    break;
+                case 'row':
+                    this.pInst.rect(this.leftTop.x, this.leftTop.y + this.innerSelected.rowIndex * this.cellHeight, this.width, this.cellHeight);
+                    break;
+                case 'column':
+                    this.pInst.rect(this.leftTop.x + this.innerSelected.colIndex * this.cellWidth, this.leftTop.y, this.cellWidth, this.height)
+                    break;
+            }
+        }
+
         this.pInst.pop();
 
+        this.pInst.push()
+        this.pInst.strokeWeight(0.3)
+        this.pInst.textFont('Roboto');
+        this.pInst.textAlign(this.pInst.CENTER, this.pInst.CENTER);
 
         for (let i = 0; i < this.rowNum; i++)
             for (let j = 0; j < this.colNum; j++) {
-                let input = this.cellContentInput[i][j];
-                let x = this.leftTop.x + j * this.cellWidth + this.cellWidth / 2;
-                let y = this.leftTop.y + i * this.cellHeight + this.cellHeight / 2;
-                // input.size(myp5.textWidth(input.value()));
-                let xOffset = Math.floor(Math.min((input.size() as Size).width, this.cellWidth) / 2);
-                let yOffset = Math.min((input.size() as Size).height, this.cellHeight) / 2;
-                input.position(x - xOffset, y - yOffset);
+                let tl = this.leftTopOfCell(i, j);
+                // this.pInst.text('The quick brown fox jumped over the lazy dog.', tl.x, tl.y, 50, 60)
+                this.pInst.text(this.cellContent[i][j].toString(), tl.x, tl.y, this.cellWidth, this.cellHeight)
+
+                // let input = this.cellContentInput[i][j];
+                // let x = this.leftTop.x + j * this.cellWidth + this.cellWidth / 2;
+                // let y = this.leftTop.y + i * this.cellHeight + this.cellHeight / 2;
+                // // input.size(myp5.textWidth(input.value()));
+                // let xOffset = Math.floor(Math.min((input.size() as Size).width, this.cellWidth) / 2);
+                // let yOffset = Math.min((input.size() as Size).height, this.cellHeight) / 2;
+                // input.position(x - xOffset, y - yOffset);
             }
+        this.pInst.pop()
 
         //行号
-        for (let i = 0; i < this.rowNum; i++) {
-            let x = this.leftTop.x - this.cellWidth / 2;
-            let y = this.leftTop.y + i * this.cellHeight + this.cellHeight / 2;
-            this.pInst.text(i, x, y);
-            // myp5.rect(x,y,1,1);
+        if (this.mouseWithin && !this.dragging) {
+            this.pInst.push()
+            this.pInst.strokeWeight(0.3)
+            this.pInst.textFont('Roboto');
+            this.pInst.textAlign(this.pInst.CENTER, this.pInst.CENTER);
+            for (let i = 0; i < this.rowNum; i++) {
+                let x = this.leftTop.x - this.cellWidth / 2;
+                let y = this.leftTop.y + i * this.cellHeight + this.cellHeight / 2;
+                this.pInst.text(i, x, y);
+                // myp5.rect(x,y,1,1);
+            }
+            //列号
+            for (let i = 0; i < this.colNum; i++) {
+                let x = this.leftTop.x + i * this.cellWidth + this.cellWidth / 2;
+                let y = this.leftTop.y - this.cellHeight / 2;
+                this.pInst.text(i, x, y);
+                // myp5.rect(x,y,1,1);
+            }
+            this.pInst.pop()
         }
-        //列号
-        for (let i = 0; i < this.colNum; i++) {
-            let x = this.leftTop.x + i * this.cellWidth + this.cellWidth / 2;
-            let y = this.leftTop.y - this.cellHeight / 2;
-            this.pInst.text(i, x, y);
-            // myp5.rect(x,y,1,1);
-        }
-        this.pInst.ellipse(this.leftTop.x, this.leftTop.y, 8, 8);
+
+        // this.pInst.ellipse(this.leftTop.x, this.leftTop.y, 8, 8);
         let titleX = this.leftTop.x + this.width / 2;
         let titleY = this.leftTop.y + this.height + 18;
-        this.titleInput.position(titleX - Math.floor((this.titleInput.size() as Size).width / 2), titleY - (this.titleInput.size() as Size).height / 2);
+        // this.titleInput.position(titleX - Math.floor((this.titleInput.size() as Size).width / 2), titleY - (this.titleInput.size() as Size).height / 2);
     }
 
     //进入编辑状态
     edit(rIndex: number, cIndex: number) {
         this.editing = true;
         this.innerSelected = {
+            kind: 'cell',
             rowIndex: rIndex,
             colIndex: cIndex,
         }
+        let input = this.board.editInput;
+        (input.elt as HTMLInputElement).maxLength = 6;
+        input.elt.onkeypress = (ev: any) => {
+            if (ev.keyCode === 13 || ev.which === 13) {
+                //只有按回车才能算编辑完成
+                this.cellContent[rIndex][cIndex] = (input.elt as HTMLInputElement).value;
+                this.editing = false;
+                input.hide()
+                // (input.elt as HTMLInputElement).blur();
+            }
+        };
+        window.setTimeout(()=>{
+            input.show()
+            input.elt.focus();
+            (input.elt as HTMLInputElement).onblur = () => {
+                this.editing = false;
+                input.hide()
+            };
+        },100)
 
-        let input = this.cellContentInput[rIndex][cIndex];
-        input.attribute('contenteditable', 'true');
-        // input.elt.disabled = false;
+
+        input.value(this.cellContent[rIndex][cIndex]);
+        (input.elt as HTMLInputElement).select()
+        input.show()
         input.elt.focus();
-        let range = window.getSelection();//创建range
-        range.selectAllChildren(input.elt);//range 选择obj下所有子内容
-        range.collapseToEnd();//光标移至最后
-        // // 获取选定对象
-        // let selection = getSelection()
-        // // 设置最后光标对象
-        // lastEditRange = selection.getRangeAt(0)
-        // input.elt.click();
-        // input.elt.select();
-        // input.elt.selectionStart = 0;
-        // input.elt.selectionEnd = input.value().length;
+
+        let lt = this.leftTopOfCell(rIndex, cIndex);
+        input.position(lt.x + this.cellWidth / 2 - Math.floor((input.size() as any).width / 2), lt.y + this.cellHeight + 2)
 
     }
     //判定选中 return 该 pos上是否成功选中
@@ -773,38 +1301,33 @@ export class Array2D extends BoardDataElement {
         let rIndex = Math.floor((mousePos.y - this.leftTop.y) / this.cellHeight);
         let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
         if (rIndex < 0 || rIndex >= this.rowNum || cIndex < 0 || cIndex >= this.colNum) return false;
-
+        this.selected = true;
         //否则选中的是当前 cell
         this.innerSelected = {
+            kind: "cell",
             rowIndex: rIndex,
             colIndex: cIndex,
         }
         return true;
     }
-    // cancelSelect() {
-    //     this.selected = null;
-    // }
+
     //判定能否开始拖拽
     drag(mousePos: Vector) {
         if (!this.posDraggable(mousePos)) return false;
         return true;
     }
     moveSelected(key: 'up' | 'down' | 'left' | 'right' | 'enter' | 'tab') {
-        if (!this.innerSelected) return false;
-        if (this.editing && key !== 'enter' && key !== 'tab') {
-            return false;
-        }
+        if (this.editing) return false;
+        if (!this.innerSelected || this.innerSelected.kind !== 'cell') return false;
 
-        if (!(this.innerSelected instanceof Array2D.Array2DPointer)) {
-            this.cellContentInput[this.innerSelected.rowIndex][this.innerSelected.colIndex].elt.blur();
-        }
+
         switch (key) {
             case 'up':
                 this.innerSelected.rowIndex = Math.max(this.innerSelected.rowIndex - 1, 0);
                 break;
             case 'down':
             case 'enter':
-                this.cellContentInput[this.innerSelected.rowIndex][this.innerSelected.colIndex].elt.blur();
+                // this.cellContentInput[this.innerSelected.rowIndex][this.innerSelected.colIndex].elt.blur();
                 this.innerSelected.rowIndex = Math.min(this.innerSelected.rowIndex + 1, this.rowNum - 1);
                 break;
             case 'left':
@@ -827,83 +1350,111 @@ export class Array2D extends BoardDataElement {
     // }
     //其实应该剔除左上角的那个 anchor
     posDraggable(mousePos: Vector) {
-        if (this.posAnchor(mousePos)) return false;
+        // if (this.posAnchor(mousePos)) return false;
         let c = 6;
         return (Math.abs(mousePos.x - this.leftTop.x) <= c && mousePos.y >= this.leftTop.y - c && mousePos.y <= this.leftTop.y + this.height + c)
             || (Math.abs(mousePos.x - this.leftTop.x - this.width) <= c && mousePos.y >= this.leftTop.y - c && mousePos.y <= this.leftTop.y + this.height + c)
             || (Math.abs(mousePos.y - this.leftTop.y) <= c && mousePos.x >= this.leftTop.x - c && mousePos.x <= this.leftTop.x + this.width + c)
             || (Math.abs(mousePos.y - this.leftTop.y - this.height) <= c && mousePos.x >= this.leftTop.x - c && mousePos.x <= this.leftTop.x + this.width + c)
-        // return (
-        //     (( || Math.abs(mousePos.x - this.leftTop.x - this.width) <= c) && (mousePos.y >= this.leftTop.y - c && mousePos.y <= this.leftTop.y + this.height + c))
-        //     || ((Math.abs(mousePos.y - this.leftTop.y) <= c || Math.abs(mousePos.y - this.leftTop.y - this.height) <= c) && (mousePos.x >= this.leftTop.x - c && mousePos.x <= this.leftTop.x + this.width + c))
-        // );
     }
 
-    private posAnchor(mousePos: Vector): boolean {
-        if (Math.abs(mousePos.x - this.leftTop.x) <= 6 && Math.abs(mousePos.y - this.leftTop.y) <= 6) {
-            return true;
-        }
-        return false;
-    }
-
-    // isLongtimeHoverAreaClickable(mousePos: { x: number; y: number; }) {
-    //     let tempx = mousePos.x - this.leftTop.x - this.width - this.xLHAOffset;
-    //     let tempy = mousePos.y - this.leftTop.y
-    //     if (tempx >= 0 && tempx <= 30 && tempy >= 0 && tempy <= 40) return 1;
+    // private posAnchor(mousePos: Vector): boolean {
+    //     if (Math.abs(mousePos.x - this.leftTop.x) <= 6 && Math.abs(mousePos.y - this.leftTop.y) <= 6) {
+    //         return true;
+    //     }
+    //     return false;
     // }
-    posHovering(mousePos: Vector) {
-        let c = 6;
-        let mainArea = (mousePos.x >= this.leftTop.x - c && mousePos.x <= this.leftTop.x + this.width + c && mousePos.y >= this.leftTop.y - c && mousePos.y <= this.leftTop.y + this.height + c)
-        return mainArea || this.addtionArea.posHovering(mousePos);
-    }
-    click(mousePos: Vector) {
-        if (!this.posHovering(mousePos)) return false;
-        //todo 整合一下，select 直接返回 posSelectable的结果。现在不能整合的原因是，改变指针样式时只需要判定 isxxxable 。
-        if (this.posAnchor(mousePos)) {
-            //按住 ctrl/cmd 多选元素
-            if (this.pInst.keyIsDown(91) || this.pInst.keyIsDown(17))
-                this.board.elementsSelected.add(this)
-            else {
-                this.board.elementsSelected.clear();
-                this.board.elementsSelected.add(this)
-            }
-            return true;
-        }
-        if (this.posDraggable(mousePos)) return true;
 
-        if (this.addtionArea.posHovering(mousePos)) {
-            this.addtionArea.click(mousePos);
-            return true;
-        }
-        for (let i = 0; i < this.rowNum; i++) {
-            for (let j = 0; j < this.colNum; j++) {
-                if (this.pointersByCell[i][j].some((pointer: Array2D.Array2DPointer, index: number) => {
-                    if (pointer.posHovering(mousePos)) {
-                        pointer.click(mousePos);
-                        return true;
+    posWithin(mousePos: Vector) {
+        let c = this.cellWidth / 2;
+        let mainArea = (mousePos.x >= this.leftTop.x - c && mousePos.x <= this.leftTop.x + this.width + c + (this.mouseWithin ? this.cellWidth : 0) && mousePos.y >= this.leftTop.y - c && mousePos.y <= this.leftTop.y + this.height + c + (this.mouseWithin ? this.cellHeight : 0))
+        return mainArea
+        // || this.addtionArea.posHovering(mousePos);
+    }
+    pressTime: number = 0;
+    pressTimeoutID: number
+
+    mousePress(pressPos: Vector) {
+        if (!this.mouseWithin) return false;
+
+
+
+        if (this.pressTime == 1) {
+            clearTimeout(this.pressTimeoutID)
+            this.doubleClick(pressPos)
+
+            this.pressTime = 0;
+        } else {
+            this.pressTime++;
+            this.pressTimeoutID = window.setTimeout(() => {
+                if (super.mousePress(pressPos)) return true;
+
+                this.pressTime=0;
+                //选择列
+                if (this.posSelectColumn(pressPos) !== null) {
+                    this.innerSelected = {
+                        kind: 'column',
+                        colIndex: this.posSelectColumn(pressPos)
                     }
-                }))
+                    this.selected = false;
                     return true;
+                }
+                //选择行
+                if (this.posSelectRow(pressPos) !== null) {
+                    this.innerSelected = {
+                        kind: 'row',
+                        rowIndex: this.posSelectRow(pressPos)
+                    }
+                    this.selected = false;
+                    return true;
+                }
+                if (this.posAddColumn(pressPos)) {
+                    for (let index = 0; index < this.cellContent.length; index++) {
+                        const row = this.cellContent[index];
+                        row.push('');
+                        // row.length++;
+                    }
+                    this.colNum++;
+                    return true;
+                }
+                if (this.posAddRow(pressPos)) {
+                    let newRow = new Array<string>();
+                    newRow.length = this.colNum;
+                    newRow.fill('');
+                    this.cellContent.push(newRow);
+                    this.rowNum++;
+                    return true;
+                }
 
-            }
+
+
+
+                // if (this.addtionArea.posHovering(mousePos)) {
+                //     this.addtionArea.click(mousePos);
+                //     return true;
+                // }
+                // for (let i = 0; i < this.rowNum; i++) {
+                //     for (let j = 0; j < this.colNum; j++) {
+                //         if (this.pointersByCell[i][j].some((pointer: LBTable.Array2DPointer, index: number) => {
+                //             if (pointer.posHovering(mousePos)) {
+                //                 pointer.click(mousePos);
+                //                 return true;
+                //             }
+                //         }))
+                //             return true;
+
+                //     }
+                // }
+
+                return this.selectCell(pressPos);
+            }, 150)
         }
-        // let rIndex = Math.floor((mousePos.y - this.leftTop.y) / this.cellHeight);
-        // let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
-        // if (rIndex < 0 || rIndex >= this.rowNum || cIndex < 0 || cIndex >= this.colNum) return false;
+        return true;
 
-        return this.selectCell(mousePos);
+
     }
-    // selectPointer(thePointer: Array2D.Array2DPointer) {
-    //     this.pointers.forEach((pointer) => {
-    //         if (pointer !== thePointer)
-    //             pointer.selected = false
-    //         else
-    //             pointer.selected = !pointer.selected;
-    //     })
-    // }
-
     doubleClick(mousePos: Vector) {
-        if (!this.posHovering(mousePos)) return false;
+        if (!this.posWithin(mousePos)) return false;
         let rIndex = Math.floor((mousePos.y - this.leftTop.y) / this.cellHeight);
         let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
         if (rIndex < 0 || rIndex >= this.rowNum || cIndex < 0 || cIndex >= this.colNum) return false;
@@ -913,230 +1464,230 @@ export class Array2D extends BoardDataElement {
     }
 
     keyPressed(keyCode: number) {
-        // if(this.selected instanceof)
-        // if (this.board.elementsSelected.size == 1) {
-        // let ele = this.board.elementsSelected.values().next().value;
 
-        if (this.selectCell)
-            // if (ele instanceof Array2D) { 
-            switch (keyCode) {
-                //暂时回车和 down 做一样处理
-                case 40://arrow down 
-                    if (this.moveSelected('down'))
-                        return false;
-                case 39://arrow right
-                    if (this.moveSelected('right'))
-                        return false;
-                case 38://arrow up
-                    if (this.moveSelected('up'))
-                        return false;
-                case 37://arrow left
-                    if (this.moveSelected('left'))
-                        return false;
-                    break;
-                //           case 13://arrow enter
-                //             if (ele.moveSelected('enter'))
-                //               return false;
-                //             break;
-                case 9://arrow left
-                    if (this.moveSelected('tab'))
-                        return false;
-                    break;
-                default:
-                    break;
-                //   }
-                // }
-            }
-
-    }
-
-    onDelete() {
-        for (let i = 0; i < this.rowNum; i++) {
-            for (let j = 0; j < this.colNum; j++) {
-                this.cellContentInput[i][j].remove();
-            }
+        switch (keyCode) {
+            //暂时回车和 down 做一样处理
+            case 40://arrow down 
+                return this.moveSelected('down')
+            case 39://arrow right
+                return this.moveSelected('right')
+            case 38://arrow up
+                return this.moveSelected('up')
+            case 37://arrow left
+                return this.moveSelected('left')
+            case 13://arrow enter
+                return this.moveSelected('enter')
+            case 9://arrow left
+                return this.moveSelected('tab')
+            case 8://backspace
+                if (this.innerSelected.kind == 'column') {
+                    this.colNum--;
+                    for (let index = 0; index < this.cellContent.length; index++) {
+                        const row = this.cellContent[index];
+                        row.splice(this.innerSelected.colIndex, 1)
+                        // row.length--; 
+                    }
+                }
+                if (this.innerSelected.kind == 'row') {
+                    this.cellContent.splice(this.innerSelected.rowIndex, 1)
+                    this.rowNum--;
+                }
+            default:
+                return false;
+                break;
+            //   }
+            // }
         }
+
     }
+
+    // onDelete() {
+    //     for (let i = 0; i < this.rowNum; i++) {
+    //         for (let j = 0; j < this.colNum; j++) {
+    //             this.cellContentInput[i][j].remove();
+    //         }
+    //     }
+    // }
 
 }
-export namespace Array2D {
-    //到底是 Array2d 持有 pointers，每个 pointer 都是Array2DPointer， 还是 Array2d持有Array2dPointers,Array2dPointers 持有 pointers
-    export class Array2DPointer extends BoardDataElement {
-        posDraggable(pos: Vector): boolean {
-            return false
-        }
-        inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean {
-            return false;
-        }
+// export namespace LBTable {
+//     //到底是 Array2d 持有 pointers，每个 pointer 都是Array2DPointer， 还是 Array2d持有Array2dPointers,Array2dPointers 持有 pointers
+//     export class Array2DPointer extends BoardDataElement {
+//         posDraggable(pos: Vector): boolean {
+//             return false
+//         }
+//         inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean {
+//             return false;
+//         }
 
-        posHovering(pos: Vector) {
-            let rIndex = Math.floor((pos.y - this.array2D.leftTop.y) / this.array2D.cellHeight);
-            let cIndex = Math.floor((pos.x - this.array2D.leftTop.x) / this.array2D.cellWidth);
-            if (rIndex < 0 || rIndex >= this.array2D.rowNum || cIndex < 0 || cIndex >= this.array2D.colNum) return false;
-            if (rIndex !== this.rowIndex || cIndex !== this.colIndex) return false;
-            let assumeIndex = (pos.y - this.array2D.leftTopOfCell(rIndex, cIndex).y) / (this.height + 2);
-            return assumeIndex == this.array2D.pointersByCell[rIndex][cIndex].indexOf(this);
-            // for (let i = 0; i <= this.array2D.rowNum; i++) {
-            //     for (let j = 0; j <= this.array2D.colNum; j++) {
-            //         this.array2D.pointersByCell[i][j].some((pointer: Array2D.Array2DPointer, index: number) => {
-            //             if (pointer == this) return true;
-            //             if (pointer.rowIndex == this.rowIndex && pointer.colIndex == this.colIndex)
-            //                 count++;
-            //         })
-            //     }
-            // }
+//         posHovering(pos: Vector) {
+//             let rIndex = Math.floor((pos.y - this.array2D.leftTop.y) / this.array2D.cellHeight);
+//             let cIndex = Math.floor((pos.x - this.array2D.leftTop.x) / this.array2D.cellWidth);
+//             if (rIndex < 0 || rIndex >= this.array2D.rowNum || cIndex < 0 || cIndex >= this.array2D.colNum) return false;
+//             if (rIndex !== this.rowIndex || cIndex !== this.colIndex) return false;
+//             let assumeIndex = (pos.y - this.array2D.leftTopOfCell(rIndex, cIndex).y) / (this.height + 2);
+//             return assumeIndex == this.array2D.pointersByCell[rIndex][cIndex].indexOf(this);
+//             // for (let i = 0; i <= this.array2D.rowNum; i++) {
+//             //     for (let j = 0; j <= this.array2D.colNum; j++) {
+//             //         this.array2D.pointersByCell[i][j].some((pointer: Array2D.Array2DPointer, index: number) => {
+//             //             if (pointer == this) return true;
+//             //             if (pointer.rowIndex == this.rowIndex && pointer.colIndex == this.colIndex)
+//             //                 count++;
+//             //         })
+//             //     }
+//             // }
 
-        }
-        click(clickPos: Vector): boolean {
-            // if(this.posClickable(clickPos))
-            // this.array2D.pointers.some((pointer) => {
-            //     if (pointer.select(mousePos, rIndex, cIndex)) {
-            //         pointerSelected = true;
-            //         this.selected = pointer;
-            //         return true;
-            //     }
-            // })
-            if (!this.posHovering(clickPos)) return false;
-            this.array2D.innerSelected = this;
-            // for (let i = 0; i <= this.array2D.rowNum; i++) {
-            //     for (let j = 0; j <= this.array2D.colNum; j++) {
-            //         this.array2D.pointersByCell[i][j].forEach((pointer) => {
-            //             if (pointer == this.array2D.innerSelected)
-            //             pointer.selected = true;A
-            //             else
-            //                 pointer.selected = false;
-            //         })
-            //     }
-            // }
-            return true;
-        }
+//         }
+//         click(clickPos: Vector): boolean {
+//             // if(this.posClickable(clickPos))
+//             // this.array2D.pointers.some((pointer) => {
+//             //     if (pointer.select(mousePos, rIndex, cIndex)) {
+//             //         pointerSelected = true;
+//             //         this.selected = pointer;
+//             //         return true;
+//             //     }
+//             // })
+//             if (!this.hovering) return false;
+//             this.array2D.innerSelected = this;
+//             // for (let i = 0; i <= this.array2D.rowNum; i++) {
+//             //     for (let j = 0; j <= this.array2D.colNum; j++) {
+//             //         this.array2D.pointersByCell[i][j].forEach((pointer) => {
+//             //             if (pointer == this.array2D.innerSelected)
+//             //             pointer.selected = true;A
+//             //             else
+//             //                 pointer.selected = false;
+//             //         })
+//             //     }
+//             // }
+//             return true;
+//         }
 
-        // array2D:Array2D;
-        // rowIndex: any;
-        // colIndex: any;
-        // selected=false;
-        height: number;
-        color: any;
-        constructor(board: typeof BoardData, pos: Vector, private array2D: Array2D, private rowIndex: number, private colIndex: number, color: any) {
-            super(board, pos);
-            this.color = color;
-            this.height = this.array2D.cellHeight / 3 - 2;
-        }
-        draw() {
-            this.selected = this.array2D.innerSelected == this;
-            let index = this.array2D.pointersByCell[this.rowIndex][this.colIndex].indexOf(this);
-            let cellLeftTop = this.array2D.leftTopOfCell(this.rowIndex, this.colIndex);
-            this.pInst.push();
-            if (this.selected) {
-                this.pInst.strokeWeight(1.5);
-            } else {
-                this.pInst.strokeWeight(0);
-            }
-            this.pInst.stroke(accent_color);
-            this.pInst.fill(this.color);
-            this.pInst.rect(cellLeftTop.x + 2, 2 + cellLeftTop.y + index * (this.height + 1), this.array2D.cellWidth - 4, this.height);
-            this.pInst.pop();
-        }
-    }
-    //二维表格右边的一个一列，矩形区域
-    export class Array2DAdditionArea extends BoardDataElement {
-        posDraggable(pos: Vector): boolean {
-            return false;
-        }
-        inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean {
-            return false;
-        }
-        width = 60;
-        height: number;
-        hide() {
-            this.hidden = true;
-        }
-        show(): void {
-            this.hidden = false;
-        }
+//         // array2D:Array2D;
+//         // rowIndex: any;
+//         // colIndex: any;
+//         // selected=false;
+//         height: number;
+//         color: any;
+//         constructor(board: typeof BoardData, pos: Vector, private array2D: LBTable, private rowIndex: number, private colIndex: number, color: any) {
+//             super(board, pos);
+//             this.color = color;
+//             this.height = this.array2D.cellHeight / 3 - 2;
+//         }
+//         draw() {
+//             this.selected = this.array2D.innerSelected == this;
+//             let index = this.array2D.pointersByCell[this.rowIndex][this.colIndex].indexOf(this);
+//             let cellLeftTop = this.array2D.leftTopOfCell(this.rowIndex, this.colIndex);
+//             this.pInst.push();
+//             if (this.selected) {
+//                 this.pInst.strokeWeight(1.5);
+//             } else {
+//                 this.pInst.strokeWeight(0);
+//             }
+//             this.pInst.stroke(accent_color);
+//             this.pInst.fill(this.color);
+//             this.pInst.rect(cellLeftTop.x + 2, 2 + cellLeftTop.y + index * (this.height + 1), this.array2D.cellWidth - 4, this.height);
+//             this.pInst.pop();
+//         }
+//     }
+//     //二维表格右边的一个一列，矩形区域
+//     export class Array2DAdditionArea extends BoardDataElement {
+//         posDraggable(pos: Vector): boolean {
+//             return false;
+//         }
+//         inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean {
+//             return false;
+//         }
+//         width = 60;
+//         height: number;
+//         hide() {
+//             this.hidden = true;
+//         }
+//         show(): void {
+//             this.hidden = false;
+//         }
 
-        posHovering(mousePos: Vector): boolean {
-            let tempx = mousePos.x - this.array2D.leftTop.x - this.array2D.width;
-            let tempy = mousePos.y - this.array2D.leftTop.y;
-            if (tempx >= 0 && tempx <= this.width && tempy >= 0 && tempy <= this.height) {
-                return true
-            }
-            return false;
-        }
-        xLHAOffset = 16;
-        hidden = true;
-        constructor(board: typeof BoardData, pos: Vector, private array2D: Array2D) {
-            super(board, pos);
-            this.height = this.array2D.height;
-        }
-        click(mousePos: Vector): boolean {
-            let index = this.posClickable(mousePos);
-            if (index == 1) {
-                // this.longtimeHover=false;
-                if (this.array2D.pointersByCell.length == 0)
-                    this.array2D.pointersByCell[0][0].push(new Array2D.Array2DPointer(this.board, null, this.array2D, 0, 0, md500_red))
-                else if (this.array2D.pointersByCell.length == 1)
-                    this.array2D.pointersByCell[0][0].push(new Array2D.Array2DPointer(this.board, null, this.array2D, 0, 0, md500_green))
-                else if (this.array2D.pointersByCell.length == 2)
-                    this.array2D.pointersByCell[0][0].push(new Array2D.Array2DPointer(this.board, null, this.array2D, 0, 0, md500_amber))
-                this.array2D.pointersCount++;
-            }
-            return true;
-            // if(this.posClickable(this.board.mousePos))
-        }
-        hover(mousePos: Vector): boolean {
-            if (this.posHovering(mousePos)) {
-                if (this.posClickable(mousePos)) this.pInst.cursor(this.pInst.HAND);
-                return true;
-            }
-            return false
-        }
-        private posClickable(mousePos: Vector) {
-            let tempx = mousePos.x - this.array2D.leftTop.x - this.array2D.width - this.xLHAOffset;
-            let tempy = mousePos.y - this.array2D.leftTop.y
-            let index: number;
-            if (tempx >= 0 && tempx <= 30 && tempy >= 0 && tempy <= 40)
-                index = 1;
-            return index;
-        }
+//         posHovering(mousePos: Vector): boolean {
+//             let tempx = mousePos.x - this.array2D.leftTop.x - this.array2D.width;
+//             let tempy = mousePos.y - this.array2D.leftTop.y;
+//             if (tempx >= 0 && tempx <= this.width && tempy >= 0 && tempy <= this.height) {
+//                 return true
+//             }
+//             return false;
+//         }
+//         xLHAOffset = 16;
+//         hidden = true;
+//         constructor(board: typeof BoardData, pos: Vector, private array2D: LBTable) {
+//             super(board, pos);
+//             this.height = this.array2D.height;
+//         }
+//         click(mousePos: Vector): boolean {
+//             let index = this.posClickable(mousePos);
+//             if (index == 1) {
+//                 // this.longtimeHover=false;
+//                 if (this.array2D.pointersByCell.length == 0)
+//                     this.array2D.pointersByCell[0][0].push(new LBTable.Array2DPointer(this.board, null, this.array2D, 0, 0, md500_red))
+//                 else if (this.array2D.pointersByCell.length == 1)
+//                     this.array2D.pointersByCell[0][0].push(new LBTable.Array2DPointer(this.board, null, this.array2D, 0, 0, md500_green))
+//                 else if (this.array2D.pointersByCell.length == 2)
+//                     this.array2D.pointersByCell[0][0].push(new LBTable.Array2DPointer(this.board, null, this.array2D, 0, 0, md500_amber))
+//                 this.array2D.pointersCount++;
+//             }
+//             return true;
+//             // if(this.posClickable(this.board.mousePos))
+//         }
+//         hover(mousePos: Vector): boolean {
+//             if (this.posHovering(mousePos)) {
+//                 if (this.posClickable(mousePos)) this.pInst.cursor(this.pInst.HAND);
+//                 return true;
+//             }
+//             return false
+//         }
+//         private posClickable(mousePos: Vector) {
+//             let tempx = mousePos.x - this.array2D.leftTop.x - this.array2D.width - this.xLHAOffset;
+//             let tempy = mousePos.y - this.array2D.leftTop.y
+//             let index: number;
+//             if (tempx >= 0 && tempx <= 30 && tempy >= 0 && tempy <= 40)
+//                 index = 1;
+//             return index;
+//         }
 
-        draw(): void {
-            if (!this.hidden) {
-                let xOffset = this.xLHAOffset;
-                let w = 25;
-                let h = 25;
-                let hh = 12;
-                this.pInst.push()
-                this.pInst.stroke(24, 24, 24);
-                this.pInst.fill(255, 0, 0);
+//         draw(): void {
+//             if (!this.hidden) {
+//                 let xOffset = this.xLHAOffset;
+//                 let w = 25;
+//                 let h = 25;
+//                 let hh = 12;
+//                 this.pInst.push()
+//                 this.pInst.stroke(24, 24, 24);
+//                 this.pInst.fill(255, 0, 0);
 
-                this.pInst.beginShape();
-                this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset, this.array2D.leftTop.y);
-                this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset + w, this.array2D.leftTop.y);
-                this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset + w, this.array2D.leftTop.y + h);
-                this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset + w / 2, this.array2D.leftTop.y + h + hh);
-                this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset, this.array2D.leftTop.y + h);
-                this.pInst.endShape(this.pInst.CLOSE);
-                this.pInst.fill(255, 255, 255);
-                let cx = this.array2D.leftTop.x + this.array2D.width + xOffset + w - 4;
-                let cy = this.array2D.leftTop.y + h + hh / 2;
-                let r = 8
-                let l = 5
-                this.pInst.ellipse(cx, cy, 2 * r, 2 * r);
-                this.pInst.line(cx - l, cy, cx + l, cy);
-                this.pInst.line(cx, cy - l, cx, cy + l);
-                this.pInst.pop()
-            }
-            {
-                this.pInst.push()
-                this.pInst.stroke(24, 24, 24);
-                this.pInst.fill(accent_color);
-                this.pInst.ellipse(this.array2D.leftTop.x, this.array2D.leftTop.y, 8, 8);
-                this.pInst.pop()
-            }
-        }
-    }
-}
+//                 this.pInst.beginShape();
+//                 this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset, this.array2D.leftTop.y);
+//                 this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset + w, this.array2D.leftTop.y);
+//                 this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset + w, this.array2D.leftTop.y + h);
+//                 this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset + w / 2, this.array2D.leftTop.y + h + hh);
+//                 this.pInst.vertex(this.array2D.leftTop.x + this.array2D.width + xOffset, this.array2D.leftTop.y + h);
+//                 this.pInst.endShape(this.pInst.CLOSE);
+//                 this.pInst.fill(255, 255, 255);
+//                 let cx = this.array2D.leftTop.x + this.array2D.width + xOffset + w - 4;
+//                 let cy = this.array2D.leftTop.y + h + hh / 2;
+//                 let r = 8
+//                 let l = 5
+//                 this.pInst.ellipse(cx, cy, 2 * r, 2 * r);
+//                 this.pInst.line(cx - l, cy, cx + l, cy);
+//                 this.pInst.line(cx, cy - l, cx, cy + l);
+//                 this.pInst.pop()
+//             }
+//             {
+//                 this.pInst.push()
+//                 this.pInst.stroke(24, 24, 24);
+//                 this.pInst.fill(accent_color);
+//                 this.pInst.ellipse(this.array2D.leftTop.x, this.array2D.leftTop.y, 8, 8);
+//                 this.pInst.pop()
+//             }
+//         }
+//     }
+// }
 export class Line extends BoardScribbleElement {
 
 
@@ -1237,9 +1788,6 @@ export class Path extends BoardScribbleElement {
     // }
 }
 export class Ellipse extends BoardScribbleElement {
-    inSelectionBox(leftTop: Vector, rightBottom: Vector): boolean {
-        return false
-    }
     // center: { x: number; y: number; };
     constructor(board: typeof BoardScribble, pos: Vector, public width: number, public height: number, public strokecolor: string, public strokeweight: number) {
         super(board, pos)

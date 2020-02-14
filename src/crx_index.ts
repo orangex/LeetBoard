@@ -8,6 +8,8 @@ const primaryColor = '#089163';
 
 
 let p5Helper = new p5(null)
+
+
 let dataBoardContainer = p5Helper.createElement('div');
 
 dataBoardContainer.id("databoard-containter");
@@ -25,12 +27,15 @@ let toolbarRightSection = p5Helper.createElement('div');
 
 toolbarRightSection.id('board-toolbar-rightsection')
 export let buttonSwitchScribbleMode = p5Helper.createElement('div',
-  `  <button class="mdc-icon-button" data-tooltype='toggleScribble'>
+  ` <div class="tooltiptext">打开/关闭涂画面板</div>
+    <button class="mdc-icon-button" data-tooltype='toggleScribble'>
       <svg  aria-hidden="true" data-tooltype='toggleScribble'>
         <use href="#iconqiehuan" data-tooltype='toggleScribble'></use>
       </svg>
     </button>`)
 buttonSwitchScribbleMode.id('mode-switch');
+buttonSwitchScribbleMode.addClass('tooltip')
+
 toolbarRightSection.child(buttonSwitchScribbleMode);
 let dataToolBtns = new Array<p5.Element>();
 
@@ -41,26 +46,73 @@ let toolbarMiddleSection = p5Helper.createElement('div');
 toolbarMiddleSection.id('board-toolbar-middlesection')
 
 
-
-let buttonInsert2DArray = p5Helper.createElement('div',
-  `  <button class="mdc-icon-button" data-tooltype='insert2DArray'>
-      <svg  aria-hidden="true" data-tooltype='insert2DArray'>
-        <use href="#iconshulie" data-tooltype='insert2DArray'></use>
+let buttonInsertNode = p5Helper.createElement('div',
+  `  <div class="tooltiptext">添加一个 Node</div>
+  <button class="mdc-icon-button" data-tooltype='insertNode'>
+      <svg  aria-hidden="true" data-tooltype='insertNode'>
+        <use href="#icontianjiajiedian" data-tooltype='insertNode'></use>
       </svg>
     </button>`)
+    buttonInsertNode.addClass('tooltip')
+
+dataToolBtns.push(buttonInsertNode)
+toolbarMiddleSection.child(buttonInsertNode)
+
+let buttonInsert2DArray = p5Helper.createElement('div',
+  `  <div class="tooltiptext">添加一个数组</div>
+  <button class="mdc-icon-button" data-tooltype='insert2DArray'>
+      <svg  aria-hidden="true" data-tooltype='insert2DArray'>
+        <use href="#iconadd-node" data-tooltype='insert2DArray'></use>
+      </svg>
+    </button>`)
+    buttonInsert2DArray.addClass('tooltip')
 dataToolBtns.push(buttonInsert2DArray)
 toolbarMiddleSection.child(buttonInsert2DArray)
 
+let buttonInsertMap = p5Helper.createElement('div',
+  `  <div class="tooltiptext">添加一个 Map</div>
+  <button class="mdc-icon-button" data-tooltype='insertMap'>
+      <svg  aria-hidden="true" data-tooltype='insertMap'>
+        <use href="#iconkv" data-tooltype='insertMap'></use>
+      </svg>
+    </button>`)
+    buttonInsertMap.addClass('tooltip')
+dataToolBtns.push(buttonInsertMap)
+toolbarMiddleSection.child(buttonInsertMap)
+
+let buttonInfo= p5Helper.createElement('div',
+` <div class="tooltiptext">Info</div>
+<button class="mdc-icon-button" id="action-info"
+   data-tooltype='info'>
+   <svg  aria-hidden="true" data-tooltype='info'>
+     <use xlink:href="#iconinfo" data-tooltype='info'></use>
+   </svg>
+ </button>`)
+ buttonInfo.addClass('tooltip')
+ toolbarLeftSection.child(buttonInfo)
+
+
 let buttonCancel = p5Helper.createElement('div',
-  ` <button class="mdc-icon-button" id="action-cancel"
+  ` <div class="tooltiptext">取消上一次删除</div>
+  <button class="mdc-icon-button" id="action-cancel"
      data-tooltype='cancel'>
      <svg  aria-hidden="true" data-tooltype='cancel'>
        <use xlink:href="#iconchexiao" data-tooltype='cancel'></use>
      </svg>
    </button>`)
+   buttonCancel.addClass('tooltip')
 toolbarLeftSection.child(buttonCancel)
 
-
+let btnScribbleHandEmpty = p5Helper.createElement('div', `
+<div class="tooltiptext">清空画板</div>
+  <button class="mdc-icon-button" id="scribble-empty" data-tooltype='empty'>
+    <svg id="icon-scribble-empty" aria-hidden="true" data-tooltype='empty'>
+      <use xlink:href="#iconqingkong" data-tooltype='empty'></use>
+    </svg>
+  </button>
+  `)
+  btnScribbleHandEmpty.addClass('tooltip')
+toolbarLeftSection.child(btnScribbleHandEmpty)
 
 
 
@@ -74,22 +126,23 @@ boardToolbar.child(toolbarRightSection)
 export let dataSketchContainer = p5Helper.createElement('div')
 
 dataSketchContainer.id('dataSketch-container');
-let insertingIcon = p5Helper.createElement('div', `
-    <svg id='insertingIcon' class="icon " aria-hidden="true" style="
-  color: #000000;
-  z-index: 4;
-  position: absolute;">
-    <use id='insertingIconUse' href="#iconshulie"></use>
-  </svg>`);
-insertingIcon.id('insertingIcon-Container');
-insertingIcon.style('visibility', 'hidden')
-dataSketchContainer.child(insertingIcon)
+// let insertingIcon = p5Helper.createElement('div', `
+//     <svg id='insertingIcon' class="icon " aria-hidden="true" style="
+//   color: #000000;
+//   z-index: 4;
+//   position: absolute;">
+//     <use id='insertingIconUse' href="#iconadd-node"></use>
+//   </svg>`);
+// insertingIcon.id('insertingIcon-Container');
+// insertingIcon.style('visibility', 'hidden')
+// dataSketchContainer.child(insertingIcon)
 
 
 dataBoardContainer.child(boardToolbar);
 dataBoardContainer.child(dataSketchContainer);
 
-let leetcodeMainContainer = document.querySelector("div[class^=main__]");
+let leetcodeMainContainer:HTMLElement = document.querySelector("div[class^=main__]");
+
 // let scribbleSketchContainer = p5Helper.createElement('div');
 // scribbleSketchContainer.parent(leetcodeMainContainer)
 // scribbleSketchContainer.id('scribbleSketch-containter')
@@ -156,15 +209,6 @@ let btnScribbleHandText = p5Helper.createElement('div', `
 scribbleToolBtns.push(btnScribbleHandText)
 toolbarMiddleSection.child(btnScribbleHandText)
 
-let btnScribbleHandEmpty = p5Helper.createElement('div', `
-  <button class="mdc-icon-button" id="scribble-empty" data-scribbletype='empty'>
-    <svg id="icon-scribble-empty" aria-hidden="true" data-scribbletype='empty'>
-      <use xlink:href="#iconqingkong" data-scribbletype='empty'></use>
-    </svg>
-  </button>
-  `)
-toolbarLeftSection.child(btnScribbleHandEmpty)
-
 
 
 let leetcodeMainContentBar = document.querySelector("div[class^=css-][class*=-Content]>div")
@@ -200,7 +244,7 @@ window.setTimeout(() => {
   rightContainer.style.flex = `0 0 auto`
   rightContainer.style.minWidth = `${rightContainerStuckWidth}px`
 
-
+  leetcodeMainContainer.style.zIndex='2';
 }, 200)
 
 
@@ -215,10 +259,10 @@ rightResizebar.onmousedown = (ev: MouseEvent) => {
 
     rightContainerWidth = document.body.clientWidth - ev.pageX - resizebarWidth / 2;
     if (rightContainerWidth < rightContainerStuckWidth) rightContainerWidth = rightContainerStuckWidth;
-    boardWidth = (document.body.scrollWidth - rightContainerWidth - leftContainerWidth - 2 * resizebarWidth);
+    boardWidth = (document.body.clientWidth - rightContainerWidth - leftContainerWidth - 2 * resizebarWidth);
 
     if (boardWidth < 0) {
-      rightContainerWidth = (document.body.scrollWidth - leftContainerWidth - 2 * resizebarWidth);
+      rightContainerWidth = (document.body.clientWidth - leftContainerWidth - 2 * resizebarWidth);
       boardWidth = 0;
     }
 
@@ -287,6 +331,7 @@ function onSwitchScribbleMode() {
       scribbleCanvas.show()
 
   } else {
+    if(SketchScribble.subdock) SketchScribble.subdock.remove();
     scribbleToolBtns.forEach(view => {
       view.hide()
     });

@@ -1,21 +1,23 @@
 import { MDCRipple } from '@material/ripple';
+import { MDCDialog } from '@material/dialog';
 import p5 = require('p5');
-import { BoardDataElement, LBLink, LBNode, Array2D, ConnnectedGraph } from './elements';
+import { BoardDataElement, LBLink, LBNode, LBTable, ConnnectedGraph, LBMap } from './elements';
 import { Vector } from 'p5';
 
 import { dataSketchContainer, boardToolbar, modeScribbling, buttonSwitchScribbleMode } from './crx_index';
 
 // import  './iconfont'
-export let actionStack = new Array<Function>();
+export let recoverStack = new Array<Function>();
 export let lastNodeTitle: number | string
 lastNodeTitle = -1;
 // let elementGroups = [];
-export let links = new Set<LBLink>();//link 的两端可以是 Node，也可以是坐标。
+// let links = new Set<LBLink>();//link 的两端可以是 Node，也可以是坐标。
 export let mousePos: Vector;
 export let elementHovering: BoardDataElement;//node and link
-export let linkScribbling: LBLink
+export let nodeHovering: LBNode;
+// export let linkScribbling: LBLink
 // Array2D 只要
-export let elementsSelected = new Set<BoardDataElement>();
+// let elementsSelected;
 export let mainSketch: p5.Element;
 export let canvas: p5.Element;
 
@@ -24,93 +26,223 @@ export let insertingSVG: p5.Element;
 export let insertingUse: p5.Element;
 
 export let elements = new Array<BoardDataElement>();//屏幕上所有能看到的元素就是 Node.(Node Group 也是 Node)
-export let inserting: string;
+//todo  function化
+// export let inserting: 'insert2DArray' | "insertNode" | 'insertMap' | 'insertLink';
+// export let inserting: typeof insertNode | typeof insertTable | typeof insertMap | Function
+export let inserting: (pos: Vector) => void
+
+export let editInput: p5.Element;
+
+let dialogInsertasArrayorLinkedListEle: p5.Element;
+let dialogInsertasArrayorLinkedList: MDCDialog
+let dialogInfoEle:p5.Element;
+let dialogInfo:MDCDialog;
+
 //sketch 维护着业务需要的全局状态
 const sketchData = (pInst: p5) => {
   pInst.mouseReleased = sketch_mouseReleased;
-  function validateQuickInsert(text: string): boolean | Array<string> | string {
+  function validateQuickInsert(text: string) {
     //todo 二维数组
     let t = text.trim();
-    if ((t.charAt(0) == '[') && (t.charAt(t.length - 1) == ']'))
-      t = t.substring(1, t.length - 1);
-    else
-      return false;
-    let result: Array<string>;
-    try {
-      result = t.split(',');
-    } catch (error) {
-      return false;
+    let table = new Array<Array<string>>();
+    if (t.startsWith("[") && t.endsWith("]")) {
+      t = t.substr(1, t.length - 2);
+      let sArr = t.split(',');
+
+      if (sArr.every((value: string, index: number, array: string[]) => {
+        return value.startsWith("[") && value.endsWith("]")
+      })) {
+        sArr.forEach((s: string) => {
+          let currArr = s.substr(1, s.length - 2).split(',');
+          table.push(currArr);
+        })
+        inserting = (pos: Vector) => {
+          insertTableWithContent(pos, table);
+        }
+      } else {
+        dialogInsertasArrayorLinkedList.listen('MDCDialog:closed', (evt: any) => {
+          switch (evt.detail.action) {
+            case 'array':
+              table.push(sArr);
+              inserting = (pos: Vector) => {
+                insertTableWithContent(pos, table);
+              }
+              break;
+            case 'linkedlist':
+              inserting = (pos: Vector) => {
+                insertLinkedListWithArray(pos, sArr)
+              }
+              break;
+            case 'close':
+              break;
+          }
+        })
+        dialogInsertasArrayorLinkedList.open();
+      }
+    } else {
+      let sArr = t.split('');
+      table.push(sArr);
+      inserting = (pos: Vector) => {
+        insertTableWithContent(pos, table);
+      }
     }
-    if (result.length >= 20) return '线性表长度不得超过20~'
-    return result;
   }
   pInst.setup = function () {
     canvas = pInst.createCanvas(1920, 1080);
     canvas.id('data-canvas')
     canvas.parent(dataSketchContainer)
+    {
+      dialogInfoEle = pInst.createElement('div', `
+    <div class="mdc-dialog__container">
+      <div class="mdc-dialog__surface">
+        <h2 class="mdc-dialog__title" id="dialog-info-title"> Info</h2>
+        <div class="mdc-dialog__content" id="dialog-info-content">
+        <h4>一些快捷键</h4>
+        <ul>
+          <li><span>按住 L 键拖动创建一条连线</span></li>
+          <li><span>Ctrl+BackSapce 删除选中的元素</span></li>
+        </ul>
+        <h4>其他</h4>
+        <ul>
+          <li><span>亲测 Adblock 插件可能会导致卡顿掉帧，建议暂时停用</span></li>
+          <li><span>反馈、建议：</span><a href='mailto:rampaging9@gmail.com' target='_blank'
+                class='url'>rampaging9@gmail.com</a></li>
+        </ul>
+        </div>
+
+      </div>
+    </div>
+    <div class="mdc-dialog__scrim"></div>
+    `)
+    }
+    dialogInfoEle.addClass("mdc-dialog")
+    dialogInfoEle.attribute('role', "alertdialog")
+    dialogInfoEle.attribute('aria-modal', "true")
+    dialogInfoEle.attribute('aria-labelledby', "dialog-info-title")
+    dialogInfoEle.attribute('aria-describedby', "dialog-info-content")
+    dialogInfoEle.style('z-index', '9999')
+
+    dialogInfo = new MDCDialog(dialogInfoEle.elt);
+    dialogInfo.close();
+
+    {
+      dialogInsertasArrayorLinkedListEle = pInst.createElement('div', `
+    <div class="mdc-dialog__container">
+      <div class="mdc-dialog__surface">
+
+        <div class="mdc-dialog__content" id="dialog-insertlinearlist-content">
+        请选择可视化该字符串的形式
+        </div>
+        <footer class="mdc-dialog__actions">
+          <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="array">
+            <svg class="mdc-button__icon" aria-hidden="true">
+              <use href="#iconyihangsilie"></use>
+            </svg>
+            <span class="mdc-button__label">数组</span>
+          </button>
+          <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="linkedlist">
+            <svg class="mdc-button__icon" aria-hidden="true">
+              <use href="#iconlianjie"></use>
+            </svg>
+            <span class="mdc-button__label">链表</span>
+          </button>
+        </footer>
+      </div>
+    </div>
+    <div class="mdc-dialog__scrim"></div>
+    `)
+    }
+
+    dialogInsertasArrayorLinkedListEle.addClass("mdc-dialog")
+    dialogInsertasArrayorLinkedListEle.attribute('role', "alertdialog")
+    dialogInsertasArrayorLinkedListEle.attribute('aria-modal', "true")
+    // dialogInsertasArrayorLinkedListEle.attribute('aria-labelledby', "my-dialog-title")
+    dialogInsertasArrayorLinkedListEle.attribute('aria-describedby', "insertlinearlist")
+    dialogInsertasArrayorLinkedListEle.style('z-index', '9999')
+    dialogInsertasArrayorLinkedListEle.id('dialogInsertasArrayorLinkedList')
+
+    dialogInsertasArrayorLinkedList = new MDCDialog(dialogInsertasArrayorLinkedListEle.elt);
+    dialogInsertasArrayorLinkedList.close();
+    editInput = pInst.createInput();
+    editInput.parent(dataSketchContainer);
 
     insertingSVG = pInst.select('#insertingIcon');
     insertingUse = pInst.select('#insertingIconUse')
     //click 事件发生在 press 和 Release 之后，有很多不便之处，所以我们用 press 事件代替
     // mainSketchHolder.mouseClicked(sketch_mouseClicked);
 
-    canvas.doubleClicked(sketch_doubleClicked);
+    canvas.doubleClicked(() => {
+      return false;
+    });
+
     canvas.mousePressed(sketch_mousePressed)
 
     dataSketchContainer.elt.addEventListener('paste', (ev: ClipboardEvent) => {
-      let paste = (ev.clipboardData || window.clipboardData).getData('text');
-      let result = validateQuickInsert(paste);
-      if (!result) return;
-      if (result instanceof Array) {
-        ev.preventDefault();
-      }
+      let paste = (ev.clipboardData).getData('text');
+      // let result = 
+      validateQuickInsert(paste);
+      // if (!result) return;
+      // if (result instanceof Array) {
+      //   ev.preventDefault();
+      // }
     })
 
     mousePos = pInst.createVector(pInst.width / 2, pInst.height / 2);
-    pInst.strokeWeight(1.2);
+
     pInst.stroke(0, 0, 0);
     pInst.angleMode(pInst.DEGREES);
-    pInst.textAlign(pInst.CENTER, pInst.CENTER);
+    // pInst.textAlign(pInst.CENTER, pInst.CENTER);
 
     //正在插入的元素类型
-
   }
 
 
-  function initMainDock() {
-    // mainDock = pInst.select('#maindock');
-    // (new MDCRipple(document.querySelector('.mdc-icon-button'))).unbounded=true;
-  }
 
+  pInst.doubleClicked = () => {
+
+  }
   pInst.draw = function () {
     mousePos.set(pInst.mouseX, pInst.mouseY);
     pInst.cursor(pInst.ARROW);
     pInst.background(255, 255, 255);
+    if (selectionBoxAnchor) {
+      let lettTopx = Math.min(selectionBoxAnchor.x, pInst.mouseX);
+      let leftTopy = Math.min(selectionBoxAnchor.y, pInst.mouseY)
+      let lefttop = pInst.createVector(lettTopx, leftTopy)
+      let rightbottomx = Math.max(selectionBoxAnchor.x, pInst.mouseX);
+      let rightbottomy = Math.max(selectionBoxAnchor.y, pInst.mouseY);
+      let rightbottom = pInst.createVector(rightbottomx, rightbottomy)
+
+      elements.forEach((ele) => {
+        if (ele.inSelectionBox(lefttop, rightbottom))
+          ele.selected = true;
+      })
+    }
+
     elementHovering = null;
-    linkScribbling = null;
-    //分发 mouseIn mouseOut 以及 hover 事件
+    // linkScribbling = null;
+    nodeHovering = null;
+
     elements.forEach((ele) => {
-      let mouseWithin = ele.posHovering(mousePos);
-      if (mouseWithin && !ele.mouseWithin) ele.mouseIn()
-      if (!mouseWithin && ele.mouseWithin) ele.mouseOut();
-      if (mouseWithin) {
+      if (ele.posWithin(mousePos)) {
         elementHovering = ele;
-        ele.hover(mousePos)
-        // return true;
+        if (ele instanceof LBNode)
+          nodeHovering = ele;
       }
+
     })
-    linkScribbling = null;
-    links.forEach((link) => {
-      if (link.onScribbling) {
-        linkScribbling = link;
-      }
-    })
+    // linkScribbling = null;
+    // links.forEach((link) => {
+    //   if (link.onScribbling) {
+    //     linkScribbling = link;
+    //   }
+    // })
 
     // maintain(mousePos);
     {
       if (inserting) {
         // pInst.cursor('./cursor_add.jpeg')
-        canvas.style('cursor','copy');
+        canvas.style('cursor', 'copy');
         // insertingSVG.style('visibility', 'visible')
         // insertingSVG.position(mousePos.x, mousePos.y);
         // switch (inserting) {
@@ -136,13 +268,11 @@ const sketchData = (pInst: p5) => {
 
 
 
-    chargeforce();
+    // chargeforce();
     elements.forEach((node) => {
       node.draw();
     })
-    links.forEach((link) => {
-      link.draw();
-    })
+
     if (selectionBoxAnchor) {
       let lettTopx = Math.min(selectionBoxAnchor.x, pInst.mouseX);
       let leftTopy = Math.min(selectionBoxAnchor.y, pInst.mouseY)
@@ -162,26 +292,56 @@ const sketchData = (pInst: p5) => {
 
 
 
-  function sketch_longPressed() {
-    elements.some((ele) => {
-      return ele.longPressed(mousePos);
-    })
-  }
+  // function sketch_longPressed(pressPos: Vector) {
+  //   elements.some((ele) => {
+  //     return ele.longPressed(pressPos);
+  //   })
+  // }
   function sketch_mousePressed() {
-    sketch_mouseClicked();
-    longPressTimeID = window.setTimeout(() => {
-      sketch_longPressed()
-    }, 300);
-    if (!elements.some((ele) => {
-      return (ele.mousePress(mousePos));
-    })) {
-      mousePressDefault(mousePos)
+    // sketch_mouseClicked(mousePos.copy());
+    // longPressTimeID = window.setTimeout(() => {
+    //   sketch_longPressed(mousePos.copy())
+    // }, 300);
+    if (inserting) {
+      inserting(mousePos.copy())
+      inserting = null;
+      return
+    }
+
+    if (elements.some((ele) => {
+      return (ele instanceof LBLink && ele.mousePress(mousePos.copy()));
+    }))
+      return;
+    else if (elements.some((ele) => {
+      return (!(ele instanceof LBLink) && ele.mousePress(mousePos.copy()));
+    }))
+      return;
+    {
+      mousePressDefault(mousePos.copy())
     }
   }
   let selectionBoxAnchor: Vector | null;
   function mousePressDefault(pressPos: Vector) {
-    //框选矩形的基准点
-    selectionBoxAnchor = pressPos.copy();
+
+
+    if (
+      // inserting == 'insertLink' || 
+      //按下 l 键
+      pInst.keyIsDown(76)) {
+
+      let linkCreating = new LBLink(exports, mousePos.copy(), mousePos.copy(), true)
+      linkCreating.onScribbling = "end";
+      // links.add(linkCreating);
+      elements.push(linkCreating)
+      inserting = null;
+    } else {
+      elements.forEach((ele) => {
+        ele.selected = false;
+      })
+      //框选矩形的基准点
+      selectionBoxAnchor = pressPos.copy();
+    }
+
   }
   function mouseReleaseDefault(releasePos: Vector) {
     //如果再是有个 link 正在涂画，那就删掉它
@@ -189,30 +349,29 @@ const sketchData = (pInst: p5) => {
     //   linkConnecting.onScribbling = false
     //   links.splice(links.indexOf(linkConnecting),1)
     // }
-
-    if (selectionBoxAnchor) {
-
-      let lettTopx = Math.min(selectionBoxAnchor.x, pInst.mouseX);
-      let leftTopy = Math.min(selectionBoxAnchor.y, pInst.mouseY)
-      let lefttop = pInst.createVector(lettTopx, leftTopy)
-      let rightbottomx = Math.max(selectionBoxAnchor.x, pInst.mouseX);
-      let rightbottomy = Math.max(selectionBoxAnchor.y, pInst.mouseY);
-      let rightbottom = pInst.createVector(rightbottomx, rightbottomy)
-      elementsSelected.clear();
-      elements.forEach((ele) => {
-        if (ele.inSelectionBox(lefttop, rightbottom))
-          elementsSelected.add(ele);
-      })
-      selectionBoxAnchor = null;
-
-    }
-    if (linkScribbling) {
-      linkScribbling.onScribbling = false;
-      links.delete(linkScribbling);
-    }
     elements.forEach((ele) => {
       ele.dragging = null;
     })
+
+    if (elements.some((ele) => {
+      if (ele instanceof LBLink && ele.onScribbling) {
+        ele.onScribbling = null;
+        return true
+      }
+    }))
+      return
+
+    if (selectionBoxAnchor) {
+
+      selectionBoxAnchor = null;
+      return
+    }
+
+    // if (linkScribbling) {
+    //   linkScribbling.onScribbling = null;
+    //   // links.delete(linkScribbling);
+    // }
+
   }
   function sketch_mouseReleased() {
     clearTimeout(longPressTimeID);
@@ -225,22 +384,9 @@ const sketchData = (pInst: p5) => {
     }
   }
 
-  function removeSelectedElements() {
 
-    if (elementsSelected) {//
-      elementsSelected.forEach((ele) => {
-        remove(ele);
-      })
-      let temp = elementsSelected;
-      actionStack.push(function () {
-        temp.forEach((ele) => {
-          recover(ele);
-        })
-        elementsSelected = temp;
-      })
-      elementsSelected.clear();
-    }
-  }
+
+
   function recover(ele: BoardDataElement) {
     // if (ele instanceof LBNode) {
     //   let linksNearby = ele.linkmap.values();
@@ -283,38 +429,14 @@ const sketchData = (pInst: p5) => {
   pInst.keyPressed = function () {
     if (modeScribbling) return;
     //优先由全局处理的逻辑
-    switch (pInst.key) {
-      case 'n':
-        if (!elementHovering) {
-          console.log('\'n\' typed, node created');
-          createNode(mousePos);
+    switch (pInst.keyCode) {
+      case pInst.BACKSPACE:
+        //todo mac 的左 ctrl
+        if (pInst.keyIsDown(17)) {
+          deleteSelected()
+          return false;
         }
-        return
         break;
-      case 'd':
-        removeSelectedElements();
-        return
-        break;
-      case '1':
-        if (!elementHovering)
-          insertBinarytree(mousePos);
-        return
-        break;
-      case '2':
-        if (!elementHovering)
-          insert2DArray(mousePos.copy());
-        return
-        break;
-      case 'e':
-        //有元素被选中并且 elementEditing不是该选中的元素或者 elementEditing为空
-        //         if (elementsSelected && elementEditing !== elementsSelected) {
-        //           elementEditing = elementsSelected;
-        //           elementsSelected.enableEditing();
-        //           return false;
-        //         }
-
-        break;
-
       default:
         break;
     }
@@ -322,58 +444,62 @@ const sketchData = (pInst: p5) => {
     elements.some((ele) => {
       return ele.keyPressed(pInst.keyCode)
     })
-
+    // return false;
   }
 
   let clickTimeId: number;
   function mouseClickDefault(clickPos: Vector) {
-    elementsSelected.clear();
-  }
-  function sketch_mouseClicked() {
-    // if(longPressTimeID)
-
-    clearTimeout(clickTimeId);
-    clickTimeId = window.setTimeout(() => {
-      if (inserting) {
-        switch (inserting) {
-          case 'insert2DArray':
-            insert2DArray(mousePos.copy());
-            inserting = null;
-            break;
-          default:
-            break;
-        }
-      } else if (elements.some((ele) => {
-        return ele.click(mousePos);
-      })) {
-        return;
-      } else
-        mouseClickDefault(mousePos);
-
-      //       if (elementHovered.isSelectable(mousePos)) {
-      //         //选中再选中就会取消选中
-      //         if (elementHovered.select(mousePos))
-      //           elementsSelected.push(elementHovered);
-      //         else
-      //           elementsSelected.splice(elementsSelected.indexOf(elementHovered), 1);
-      //       }
-    }, 200);
-  }
-
-
-  function sketch_doubleClicked() {
-
-    clearTimeout(clickTimeId);
-    if (elements.some((ele) => {
-      return ele.doubleClick(mousePos.copy())
-    }))
-      return;
-    // elementHovering.doubleClick(mousePos.copy());
-
-
-    return false;
+    //取消选中
+    elements.forEach((ele) => {
+      ele.selected = false;
+    })
 
   }
+  // function sketch_mouseClicked(clickPos: Vector) {
+  //   // if(longPressTimeID)
+
+  //   clearTimeout(clickTimeId);
+  //   clickTimeId = window.setTimeout(() => {
+
+  //     if (inserting) {
+  //       inserting(clickPos.copy())
+  //       inserting = null;
+  //     }
+  //     else if (elements.some((ele) => {
+  //       return (ele instanceof LBLink && ele.click(clickPos));
+  //     })) {
+  //       return;
+  //     } else if (elements.some((ele) => {
+  //       return (!(ele instanceof LBLink) && ele.click(clickPos));
+  //     })) {
+  //       return;
+  //     } else
+  //       mouseClickDefault(clickPos);
+
+  //     //       if (elementHovered.isSelectable(mousePos)) {
+  //     //         //选中再选中就会取消选中
+  //     //         if (elementHovered.select(mousePos))
+  //     //           elementsSelected.push(elementHovered);
+  //     //         else
+  //     //           elementsSelected.splice(elementsSelected.indexOf(elementHovered), 1);
+  //     //       }
+  //   }, 200);
+  // }
+
+
+  // function sketch_doubleClicked() {
+
+  //   clearTimeout(clickTimeId);
+  //   if (elements.some((ele) => {
+  //     return ele.doubleClick(mousePos.copy())
+  //   }))
+  //     return;
+  //   // elementHovering.doubleClick(mousePos.copy());
+
+
+  //   return false;
+
+  // }
   //分发事件
 
 
@@ -382,19 +508,42 @@ const sketchData = (pInst: p5) => {
   // }
 }
 
+function deleteSelected() {
+  let elementsToDelete = elements.filter((ele) => {
+    return (ele.selected == true)
+  })
 
-function insert2DArray(pos: Vector, rowNum?: number, colNum?: number) {
-  if (rowNum && colNum)
-    insert2DArrayWithSize(pos, rowNum, colNum);
-  else
-    insert2DArrayWithSize(pos, 3, 4);
+  elements = elements.filter((ele) => {
+    return (ele.selected == false)
+  })
+  recoverStack.push(() => {
+    elements = elements.concat(elementsToDelete);
+  })
+}
+function insertLinkedListWithArray(pos: Vector, content: Array<string>) {
+  content.push('null')
+  let posCurr = pos.copy()
+  let offset = pInst.createVector(80, 0);
+  let lastNode = insertNode(posCurr, content[0]);
+  for (let index = 1; index < content.length; index++) {
+    posCurr.add(offset);
+    let currNode = insertNode(posCurr, content[index]);
+    union(lastNode, currNode)
+    let link = new LBLink(exports, lastNode, currNode, true)
+    // links.add(link);
+    elements.push(link)
+    lastNode = currNode;
+  }
 }
 
-function insert2DArrayWithSize(pos: Vector, rowNum: number, colNum: number) {
-  let array2D = new Array2D(exports, pos, rowNum, colNum);
+function insertTableWithContent(pos: Vector, content: Array<Array<string>>) {
+  let array2D = new LBTable(exports, pos, content);
   elements.push(array2D);
-  // elementGroups.push(array2D);
 }
+function insertTable(pos: Vector) {
+  insertTableWithContent(pos, null);
+}
+
 
 function insertBinarytree(pos: Vector) {
   insertBinarytreeRandom(pos.x - 80, pos.x + 80, pos.y, 8);
@@ -403,7 +552,7 @@ function insertBinarytree(pos: Vector) {
 function insertBinarytreeRandom(limitL: number, limitR: number, y: number, num: number) {
   if (num == 0) return null;
   let pos = pInst.createVector((limitL + limitR) / 2, y);
-  let node = createNode(pos);
+  let node = insertNode(pos);
   //sketch.nodes.push(node)
   let lnum = Math.floor(Math.random() * num);
   let rnum = num - 1 - lnum;
@@ -411,12 +560,12 @@ function insertBinarytreeRandom(limitL: number, limitR: number, y: number, num: 
   let left = insertBinarytreeRandom(limitL, pos.x, pos.y + 70, lnum);
   let right = insertBinarytreeRandom(pos.x, limitR, y + 70, rnum);
   if (left) {
-    links.add(new LBLink(exports, node, left, true));
+    elements.push(new LBLink(exports, node, left, true));
     union(node, left)
     // createLink(node, left, left);
   }
   if (right) {
-    links.add(new LBLink(exports, node, right, true));
+    elements.push(new LBLink(exports, node, right, true));
     union(node, right)
   }
   return node;
@@ -477,21 +626,34 @@ export function union(nodeA: LBNode, nodeB: LBNode) {
 let lastTitle: string | number;
 lastTitle = -1;
 
-function createNode(pos: Vector) {
+function insertNodeAtPos(pos: Vector) {
+  insertNode(pos);
+}
+function insertNode(pos: Vector, title?: string) {
   let node: LBNode;
-  // var re = /^[0-9]+.?[0-9]*/;//判断字符串是否为数字//判断正整数/[1−9]+[0−9]∗]∗/;
-  if (typeof lastTitle == 'number') {
-    lastTitle++;
-    node = new LBNode(exports, pos.copy(), lastTitle);
-    // node.content = lastTitle;
+  if (title) {
+    node = new LBNode(exports, pos.copy(), title);
   } else
-    node = new LBNode(exports, pos.copy());
+    // var re = /^[0-9]+.?[0-9]*/;//判断字符串是否为数字//判断正整数/[1−9]+[0−9]∗]∗/;
+    if (typeof lastTitle == 'number') {
+      lastTitle++;
+      node = new LBNode(exports, pos.copy(), lastTitle);
+      // node.content = lastTitle;
+    } else
+      node = new LBNode(exports, pos.copy());
   elements.push(node);
 
   let graph = new ConnnectedGraph([node]);
   node.graphBelong = graph;
   graphs.add(graph);
   return node;
+}
+function insertMapAtPos(pos: Vector) {
+  insertMap
+}
+function insertMap(pos: Vector) {
+  let map = new LBMap(exports, pos)
+  elements.push(map);
 }
 
 let constant_charge = 400;
@@ -571,15 +733,33 @@ export let onToolbarClicked = function (ev: MouseEvent) {
   let target = ev.target;
   let type = (target as Element).getAttribute('data-tooltype');
   switch (type) {
+    case 'info':
+      dialogInfo.open();
+      break;
     case 'cancel':
-      if (actionStack.length !== 0)
-        actionStack.pop()();
+      if (recoverStack.length !== 0)
+        recoverStack.pop()();
+      break;
+    case 'empty':
+      let eles=elements.slice(0,elements.length);
+      elements.splice(0,elements.length)
+      recoverStack.push(()=>{
+        elements=elements.concat(eles);
+      })
       break;
     case 'insert2DArray':
+      if (inserting == insertTable) inserting = null;
+      else inserting = insertTable;
+      break
     case 'insertNode':
+      if (inserting == insertNode) inserting = null
+      else inserting = insertNode;
+      break
+    case 'insertMap':
+      if (inserting == insertMap) inserting = null
+      else inserting = insertMap
       //如果正在 insert 与点选的 type 一致，则取消
-      if (inserting == type) inserting = null;
-      else inserting = type;
+      break
     default:
       break;
   }

@@ -1,24 +1,26 @@
-Date : 2020-01-11 16:43:56
+Date : 2020-02-05 15:26:35
 Directory : /Users/orangex/Develop/LeetBoard
-Total : 20 files,  83023 codes, 32760 comments, 5289 blanks, all 121072 lines
+Total : 27 files,  307053 codes, 113889 comments, 18714 blanks, all 439656 lines
 
 Languages
 +------------+------------+------------+------------+------------+------------+
 | language   | files      | code       | comment    | blank      | total      |
 +------------+------------+------------+------------+------------+------------+
-| JavaScript |          9 |     79,812 |     32,341 |      5,007 |    117,160 |
-| TypeScript |          5 |      1,537 |        400 |        242 |      2,179 |
-| JSON       |          3 |      1,429 |          0 |          3 |      1,432 |
-| HTML       |          1 |        134 |         14 |         17 |        165 |
-| CSS        |          2 |        111 |          5 |         20 |        136 |
+| JavaScript |         13 |    295,166 |    113,098 |     18,181 |    426,445 |
+| JSON       |          4 |      8,435 |         16 |          2 |      8,453 |
+| TypeScript |          5 |      2,189 |        678 |        407 |      3,274 |
+| CSS        |          1 |      1,008 |         48 |         57 |      1,113 |
+| SCSS       |          2 |        166 |         48 |         58 |        272 |
+| HTML       |          2 |         89 |          1 |          9 |         99 |
 +------------+------------+------------+------------+------------+------------+
 
 Directories
 +-----------------------------------------------------------+------------+------------+------------+------------+------------+
 | path                                                      | files      | code       | comment    | blank      | total      |
 +-----------------------------------------------------------+------------+------------+------------+------------+------------+
-| .                                                         |         20 |     83,023 |     32,760 |      5,289 |    121,072 |
-| src                                                       |         19 |     82,276 |     32,760 |      5,288 |    120,324 |
+| .                                                         |         27 |    307,053 |    113,889 |     18,714 |    439,656 |
+| dist                                                      |          9 |    216,687 |     80,901 |     13,283 |    310,871 |
+| src                                                       |         14 |     81,881 |     32,968 |      5,424 |    120,273 |
 | src/lib                                                   |          6 |     79,525 |     32,242 |      4,959 |    116,726 |
 +-----------------------------------------------------------+------------+------------+------------+------------+------------+
 
@@ -26,25 +28,32 @@ Files
 +-----------------------------------------------------------+------------+------------+------------+------------+------------+
 | filename                                                  | language   | code       | comment    | blank      | total      |
 +-----------------------------------------------------------+------------+------------+------------+------------+------------+
-| /Users/orangex/Develop/LeetBoard/package-lock.json        | JSON       |        747 |          0 |          1 |        748 |
-| /Users/orangex/Develop/LeetBoard/src/actions.js           | JavaScript |          0 |         62 |          7 |         69 |
-| /Users/orangex/Develop/LeetBoard/src/drawable.ts          | TypeScript |      1,080 |        214 |        133 |      1,427 |
-| /Users/orangex/Develop/LeetBoard/src/global.d.ts          | TypeScript |          0 |          0 |          1 |          1 |
-| /Users/orangex/Develop/LeetBoard/src/global.ts            | TypeScript |         33 |         21 |         10 |         64 |
-| /Users/orangex/Develop/LeetBoard/src/gui.js               | JavaScript |          0 |          0 |          1 |          1 |
-| /Users/orangex/Develop/LeetBoard/src/index.html           | HTML       |        134 |         14 |         17 |        165 |
+| /Users/orangex/Develop/LeetBoard/dist/ali_iconfont.js     | JavaScript |          1 |          0 |          0 |          1 |
+| /Users/orangex/Develop/LeetBoard/dist/bundle.js           | JavaScript |     71,737 |     26,851 |      4,409 |    102,997 |
+| /Users/orangex/Develop/LeetBoard/dist/crx_bundle.css      | CSS        |      1,008 |         48 |         57 |      1,113 |
+| /Users/orangex/Develop/LeetBoard/dist/crx_bundle.js       | JavaScript |     72,032 |     27,125 |      4,402 |    103,559 |
+| /Users/orangex/Develop/LeetBoard/dist/css.js              | JavaScript |         77 |         22 |          4 |        103 |
+| /Users/orangex/Develop/LeetBoard/dist/index.html          | HTML       |         88 |          1 |          9 |         98 |
+| /Users/orangex/Develop/LeetBoard/dist/manifest.json       | JSON       |         17 |         11 |          0 |         28 |
+| /Users/orangex/Develop/LeetBoard/dist/popup.html          | HTML       |          1 |          0 |          0 |          1 |
+| /Users/orangex/Develop/LeetBoard/dist/web_bundle.js       | JavaScript |     71,726 |     26,843 |      4,402 |    102,971 |
+| /Users/orangex/Develop/LeetBoard/package-lock.json        | JSON       |      8,362 |          0 |          1 |      8,363 |
+| /Users/orangex/Develop/LeetBoard/package.json             | JSON       |         46 |          0 |          1 |         47 |
+| /Users/orangex/Develop/LeetBoard/src/crx_index.ts         | TypeScript |        315 |         21 |         84 |        420 |
+| /Users/orangex/Develop/LeetBoard/src/elements.ts          | TypeScript |      1,207 |        435 |        195 |      1,837 |
+| /Users/orangex/Develop/LeetBoard/src/global.ts            | TypeScript |         16 |         13 |          9 |         38 |
+| /Users/orangex/Develop/LeetBoard/src/iconfont.js          | JavaScript |          1 |          0 |          0 |          1 |
+| /Users/orangex/Develop/LeetBoard/src/index.scss           | SCSS       |        151 |         32 |         42 |        225 |
 | /Users/orangex/Develop/LeetBoard/src/lib/p5.experience.js | JavaScript |        597 |         58 |        270 |        925 |
 | /Users/orangex/Develop/LeetBoard/src/lib/p5.gui.js        | JavaScript |        149 |         48 |         55 |        252 |
 | /Users/orangex/Develop/LeetBoard/src/lib/p5.js            | JavaScript |     69,775 |     26,428 |      4,365 |    100,568 |
 | /Users/orangex/Develop/LeetBoard/src/lib/p5.scribble.js   | JavaScript |        361 |         14 |         84 |        459 |
 | /Users/orangex/Develop/LeetBoard/src/lib/p5.sound.js      | JavaScript |      7,678 |      5,198 |          4 |     12,880 |
 | /Users/orangex/Develop/LeetBoard/src/lib/quicksettings.js | JavaScript |        965 |        496 |        181 |      1,642 |
-| /Users/orangex/Develop/LeetBoard/src/package-lock.json    | JSON       |        662 |          0 |          1 |        663 |
-| /Users/orangex/Develop/LeetBoard/src/package.json         | JSON       |         20 |          0 |          1 |         21 |
-| /Users/orangex/Develop/LeetBoard/src/palette.css          | CSS        |         10 |          1 |          5 |         16 |
-| /Users/orangex/Develop/LeetBoard/src/particle.ts          | TypeScript |         46 |          4 |          8 |         58 |
-| /Users/orangex/Develop/LeetBoard/src/sketchData.ts        | TypeScript |        378 |        161 |         90 |        629 |
-| /Users/orangex/Develop/LeetBoard/src/sketchScribble.js    | JavaScript |        287 |         37 |         40 |        364 |
-| /Users/orangex/Develop/LeetBoard/src/style.css            | CSS        |        101 |          4 |         15 |        120 |
-| Total                                                     |            |     83,023 |     32,760 |      5,289 |    121,072 |
+| /Users/orangex/Develop/LeetBoard/src/mdTheme.scss         | SCSS       |         15 |         16 |         16 |         47 |
+| /Users/orangex/Develop/LeetBoard/src/sketchData.ts        | TypeScript |        371 |        151 |         81 |        603 |
+| /Users/orangex/Develop/LeetBoard/src/sketchScribble.ts    | TypeScript |        280 |         58 |         38 |        376 |
+| /Users/orangex/Develop/LeetBoard/tsconfig.json            | JSON       |         10 |          5 |          0 |         15 |
+| /Users/orangex/Develop/LeetBoard/webpack.config.js        | JavaScript |         67 |         15 |          5 |         87 |
+| Total                                                     |            |    307,053 |    113,889 |     18,714 |    439,656 |
 +-----------------------------------------------------------+------------+------------+------------+------------+------------+

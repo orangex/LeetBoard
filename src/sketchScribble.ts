@@ -41,7 +41,7 @@ let scribblingAnchor;
 export let mousePos: p5.Vector;
 let canvas: p5.Element;
 let currentScribbleType: ScribbleType = null;
-let subdock: p5.Element;
+export let subdock: p5.Element;
 let elementStack = new Array<BoardScribbleElement>();//TODO 理论上撤销的都是行为，应该是个存 action的 actionStack，不过所有的行为其实都是绘画，所有存”drawable“是目前看起来更好的方法
 window.onresize = () => {
 

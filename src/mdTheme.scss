@@ -6,8 +6,8 @@
 // To change your theme's typography, we recommend importing a font from Google Fonts and setting the global font-family https://fonts.google.com
 
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500');
-$mdc-typography-font-family: unquote("Roboto, sans-serif");
-
+// $mdc-typography-font-family: unquote("Roboto, sans-serif");
+$mdc-typography-font-family: "Chinese Quote", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 
 /* Shape */
 // The shapes of small, medium, and large components can be themed by overriding the default values. We recommend using our shape customization tool to help you pick your radius values. https://material.io/design/shape/about-shape.html#shape-customization-tool

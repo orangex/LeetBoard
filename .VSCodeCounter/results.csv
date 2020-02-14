@@ -1,22 +1,29 @@
-filename, language, JSON, HTML, TypeScript, JavaScript, CSS, comment, blank, total
-/Users/orangex/Develop/LeetBoard/package-lock.json, JSON, 747, 0, 0, 0, 0, 0, 1, 748
-/Users/orangex/Develop/LeetBoard/src/actions.js, JavaScript, 0, 0, 0, 0, 0, 62, 7, 69
-/Users/orangex/Develop/LeetBoard/src/drawable.ts, TypeScript, 0, 0, 1080, 0, 0, 214, 133, 1427
-/Users/orangex/Develop/LeetBoard/src/global.d.ts, TypeScript, 0, 0, 0, 0, 0, 0, 1, 1
-/Users/orangex/Develop/LeetBoard/src/global.ts, TypeScript, 0, 0, 33, 0, 0, 21, 10, 64
-/Users/orangex/Develop/LeetBoard/src/gui.js, JavaScript, 0, 0, 0, 0, 0, 0, 1, 1
-/Users/orangex/Develop/LeetBoard/src/index.html, HTML, 0, 134, 0, 0, 0, 14, 17, 165
-/Users/orangex/Develop/LeetBoard/src/lib/p5.experience.js, JavaScript, 0, 0, 0, 597, 0, 58, 270, 925
-/Users/orangex/Develop/LeetBoard/src/lib/p5.gui.js, JavaScript, 0, 0, 0, 149, 0, 48, 55, 252
-/Users/orangex/Develop/LeetBoard/src/lib/p5.js, JavaScript, 0, 0, 0, 69775, 0, 26428, 4365, 100568
-/Users/orangex/Develop/LeetBoard/src/lib/p5.scribble.js, JavaScript, 0, 0, 0, 361, 0, 14, 84, 459
-/Users/orangex/Develop/LeetBoard/src/lib/p5.sound.js, JavaScript, 0, 0, 0, 7678, 0, 5198, 4, 12880
-/Users/orangex/Develop/LeetBoard/src/lib/quicksettings.js, JavaScript, 0, 0, 0, 965, 0, 496, 181, 1642
-/Users/orangex/Develop/LeetBoard/src/package-lock.json, JSON, 662, 0, 0, 0, 0, 0, 1, 663
-/Users/orangex/Develop/LeetBoard/src/package.json, JSON, 20, 0, 0, 0, 0, 0, 1, 21
-/Users/orangex/Develop/LeetBoard/src/palette.css, CSS, 0, 0, 0, 0, 10, 1, 5, 16
-/Users/orangex/Develop/LeetBoard/src/particle.ts, TypeScript, 0, 0, 46, 0, 0, 4, 8, 58
-/Users/orangex/Develop/LeetBoard/src/sketchData.ts, TypeScript, 0, 0, 378, 0, 0, 161, 90, 629
-/Users/orangex/Develop/LeetBoard/src/sketchScribble.js, JavaScript, 0, 0, 0, 287, 0, 37, 40, 364
-/Users/orangex/Develop/LeetBoard/src/style.css, CSS, 0, 0, 0, 0, 101, 4, 15, 120
-Total, -, 1429, 134, 1537, 79812, 111, 32760, 5289, 121072
+filename, language, JavaScript, HTML, JSON, CSS, SCSS, TypeScript, comment, blank, total
+/Users/orangex/Develop/LeetBoard/dist/ali_iconfont.js, JavaScript, 1, 0, 0, 0, 0, 0, 0, 0, 1
+/Users/orangex/Develop/LeetBoard/dist/bundle.js, JavaScript, 71737, 0, 0, 0, 0, 0, 26851, 4409, 102997
+/Users/orangex/Develop/LeetBoard/dist/crx_bundle.css, CSS, 0, 0, 0, 1008, 0, 0, 48, 57, 1113
+/Users/orangex/Develop/LeetBoard/dist/crx_bundle.js, JavaScript, 72032, 0, 0, 0, 0, 0, 27125, 4402, 103559
+/Users/orangex/Develop/LeetBoard/dist/css.js, JavaScript, 77, 0, 0, 0, 0, 0, 22, 4, 103
+/Users/orangex/Develop/LeetBoard/dist/index.html, HTML, 0, 88, 0, 0, 0, 0, 1, 9, 98
+/Users/orangex/Develop/LeetBoard/dist/manifest.json, JSON, 0, 0, 17, 0, 0, 0, 11, 0, 28
+/Users/orangex/Develop/LeetBoard/dist/popup.html, HTML, 0, 1, 0, 0, 0, 0, 0, 0, 1
+/Users/orangex/Develop/LeetBoard/dist/web_bundle.js, JavaScript, 71726, 0, 0, 0, 0, 0, 26843, 4402, 102971
+/Users/orangex/Develop/LeetBoard/package-lock.json, JSON, 0, 0, 8362, 0, 0, 0, 0, 1, 8363
+/Users/orangex/Develop/LeetBoard/package.json, JSON, 0, 0, 46, 0, 0, 0, 0, 1, 47
+/Users/orangex/Develop/LeetBoard/src/crx_index.ts, TypeScript, 0, 0, 0, 0, 0, 315, 21, 84, 420
+/Users/orangex/Develop/LeetBoard/src/elements.ts, TypeScript, 0, 0, 0, 0, 0, 1207, 435, 195, 1837
+/Users/orangex/Develop/LeetBoard/src/global.ts, TypeScript, 0, 0, 0, 0, 0, 16, 13, 9, 38
+/Users/orangex/Develop/LeetBoard/src/iconfont.js, JavaScript, 1, 0, 0, 0, 0, 0, 0, 0, 1
+/Users/orangex/Develop/LeetBoard/src/index.scss, SCSS, 0, 0, 0, 0, 151, 0, 32, 42, 225
+/Users/orangex/Develop/LeetBoard/src/lib/p5.experience.js, JavaScript, 597, 0, 0, 0, 0, 0, 58, 270, 925
+/Users/orangex/Develop/LeetBoard/src/lib/p5.gui.js, JavaScript, 149, 0, 0, 0, 0, 0, 48, 55, 252
+/Users/orangex/Develop/LeetBoard/src/lib/p5.js, JavaScript, 69775, 0, 0, 0, 0, 0, 26428, 4365, 100568
+/Users/orangex/Develop/LeetBoard/src/lib/p5.scribble.js, JavaScript, 361, 0, 0, 0, 0, 0, 14, 84, 459
+/Users/orangex/Develop/LeetBoard/src/lib/p5.sound.js, JavaScript, 7678, 0, 0, 0, 0, 0, 5198, 4, 12880
+/Users/orangex/Develop/LeetBoard/src/lib/quicksettings.js, JavaScript, 965, 0, 0, 0, 0, 0, 496, 181, 1642
+/Users/orangex/Develop/LeetBoard/src/mdTheme.scss, SCSS, 0, 0, 0, 0, 15, 0, 16, 16, 47
+/Users/orangex/Develop/LeetBoard/src/sketchData.ts, TypeScript, 0, 0, 0, 0, 0, 371, 151, 81, 603
+/Users/orangex/Develop/LeetBoard/src/sketchScribble.ts, TypeScript, 0, 0, 0, 0, 0, 280, 58, 38, 376
+/Users/orangex/Develop/LeetBoard/tsconfig.json, JSON, 0, 0, 10, 0, 0, 0, 5, 0, 15
+/Users/orangex/Develop/LeetBoard/webpack.config.js, JavaScript, 67, 0, 0, 0, 0, 0, 15, 5, 87
+Total, -, 295166, 89, 8435, 1008, 166, 2189, 113889, 18714, 439656
