@@ -1,28 +1,84 @@
 import p5 = require("p5")
 import { MDCRipple } from '@material/ripple';
+import { MDCDialog } from '@material/dialog';
+
+let dialogInfoEle: p5.Element;
+let dialogInfo: MDCDialog;
 
 import * as SketchData from './sketchData'
 import * as SketchScribble from "./sketchScribble"
 
 const primaryColor = '#089163';
 
+const sketchHelper = (pInst: p5) => {
+  pInst.keyPressed=function(){
+    //alt 键
+    if(pInst.keyCode==18){
+      switchScribbleMode()
+      return;
+    }
+  }
+}
+let p5Helper = new p5(sketchHelper)
 
-let p5Helper = new p5(null)
 
-
-let dataBoardContainer = p5Helper.createElement('div');
+export let dataBoardContainer = p5Helper.createElement('div');
 
 dataBoardContainer.id("databoard-containter");
-
+dataBoardContainer.attribute('tabindex','-1');
+dataBoardContainer.elt.focus();
 export let boardToolbar = p5Helper.createElement('div')
 
 boardToolbar.id('board-toolbar')
 boardToolbar.mouseClicked((ev) => {
+  let target = ev.target;
+  let type = (target as Element).getAttribute('data-tooltype');
+  if(type=='info'){
+    dialogInfo.open();
+  } else 
   if (modeScribbling)
     SketchScribble.onToolbarClicked(ev);
   else
     SketchData.onToolbarClicked(ev)
 })
+
+
+{
+  dialogInfoEle = p5Helper.createElement('div', `
+<div class="mdc-dialog__container">
+  <div class="mdc-dialog__surface">
+    <h2 class="mdc-dialog__title" id="dialog-info-title"> Info</h2>
+    <div class="mdc-dialog__content" id="dialog-info-content">
+    <h4>一些快捷键</h4>
+    <ul>
+      <li><span>按住 Shift 键拖动创建一条连线</span></li>
+      <li><span>Ctrl+BackSapce 删除框选中的元素</span></li>
+      <li><span>按住 Cmd/Ctrl 点击元素以多选</span></li>
+    </ul>
+    <h4>其他</h4>
+    <ul>
+      <li><span>亲测 Adblock 插件可能会导致卡顿掉帧，建议暂时停用</span></li>
+      <li><span>反馈、建议：</span><a href='mailto:rampaging9@gmail.com' target='_blank'
+            class='url'>rampaging9@gmail.com</a></li>
+    </ul>
+    </div>
+
+  </div>
+</div>
+<div class="mdc-dialog__scrim"></div>
+`)
+}
+dialogInfoEle.addClass("mdc-dialog")
+dialogInfoEle.attribute('role', "alertdialog")
+dialogInfoEle.attribute('aria-modal', "true")
+dialogInfoEle.attribute('aria-labelledby', "dialog-info-title")
+dialogInfoEle.attribute('aria-describedby', "dialog-info-content")
+dialogInfoEle.style('z-index', '9999')
+
+dialogInfo = new MDCDialog(dialogInfoEle.elt);
+dialogInfo.close();
+
+
 let toolbarRightSection = p5Helper.createElement('div');
 
 toolbarRightSection.id('board-toolbar-rightsection')
@@ -93,7 +149,7 @@ let buttonInfo= p5Helper.createElement('div',
 
 
 let buttonCancel = p5Helper.createElement('div',
-  ` <div class="tooltiptext">取消上一次删除</div>
+  ` <div id="cancel-tiptext" class="tooltiptext">撤销删除</div>
   <button class="mdc-icon-button" id="action-cancel"
      data-tooltype='cancel'>
      <svg  aria-hidden="true" data-tooltype='cancel'>
@@ -154,18 +210,18 @@ let leetcodeMainContainer:HTMLElement = document.querySelector("div[class^=main_
 let scribbleToolBtns = new Array<p5.Element>();
 let btnScribbleHandwrite = p5Helper.createElement('div', `
 
-  <button class="mdc-icon-button" id="scribble-handwrite" data-scribbletype='handwrite'>
-    <svg id="icon-scribble-handwrite"  aria-hidden="true" data-scribbletype='handwrite'>
-      <use xlink:href="#iconqianming" data-scribbletype='handwrite'></use>
+  <button class="mdc-icon-button" id="scribble-handwrite" data-tooltype='handwrite'>
+    <svg id="icon-scribble-handwrite"  aria-hidden="true" data-tooltype='handwrite'>
+      <use xlink:href="#iconqianming" data-tooltype='handwrite'></use>
     </svg>
   </button>
 `);
 scribbleToolBtns.push(btnScribbleHandwrite)
 toolbarMiddleSection.child(btnScribbleHandwrite)
 let btnScribbleRect = p5Helper.createElement('div', `
-  <button class="mdc-icon-button" id="scribble-rect" data-scribbletype='rect'>
-    <svg id="icon-scribble-rect"  aria-hidden="true" data-scribbletype='rect'>
-      <use xlink:href="#iconjuxing" data-scribbletype='rect'></use>
+  <button class="mdc-icon-button" id="scribble-rect" data-tooltype='rect'>
+    <svg id="icon-scribble-rect"  aria-hidden="true" data-tooltype='rect'>
+      <use xlink:href="#iconjuxing" data-tooltype='rect'></use>
     </svg>
   </button>
   `);
@@ -173,36 +229,36 @@ scribbleToolBtns.push(btnScribbleRect)
 toolbarMiddleSection.child(btnScribbleRect)
 let btnScribbleHandEllipse = p5Helper.createElement('div', `
   
-  <button class="mdc-icon-button" id="scribble-ellipse" data-scribbletype='ellipse'>
-    <svg id="icon-scribble-ellipse"  aria-hidden="true" data-scribbletype='ellipse'>
-      <use xlink:href="#icontuoyuan1copy" data-scribbletype='ellipse'></use>
+  <button class="mdc-icon-button" id="scribble-ellipse" data-tooltype='ellipse'>
+    <svg id="icon-scribble-ellipse"  aria-hidden="true" data-tooltype='ellipse'>
+      <use xlink:href="#icontuoyuan1copy" data-tooltype='ellipse'></use>
     </svg>
   </button>
   `);
 scribbleToolBtns.push(btnScribbleHandEllipse)
 toolbarMiddleSection.child(btnScribbleHandEllipse)
 let btnScribbleHandArrow = p5Helper.createElement('div', `
-  <button class="mdc-icon-button" id="scribble-arrow" data-scribbletype='arrow'>
-    <svg id="icon-scribble-arrow"  aria-hidden="true" data-scribbletype='arrow'>
-      <use xlink:href="#iconrightbottom" data-scribbletype='arrow'></use>
+  <button class="mdc-icon-button" id="scribble-arrow" data-tooltype='arrow'>
+    <svg id="icon-scribble-arrow"  aria-hidden="true" data-tooltype='arrow'>
+      <use xlink:href="#iconrightbottom" data-tooltype='arrow'></use>
     </svg>
   </button>
   `);
 scribbleToolBtns.push(btnScribbleHandArrow)
 toolbarMiddleSection.child(btnScribbleHandArrow)
 let btnScribbleHandLine = p5Helper.createElement('div', `
-  <button class="mdc-icon-button" id="scribble-line" data-scribbletype='line'>
-    <svg id="icon-scribble-line"  aria-hidden="true" data-scribbletype='line'>
-      <use xlink:href="#iconline" data-scribbletype='line'></use>
+  <button class="mdc-icon-button" id="scribble-line" data-tooltype='line'>
+    <svg id="icon-scribble-line"  aria-hidden="true" data-tooltype='line'>
+      <use xlink:href="#iconline" data-tooltype='line'></use>
     </svg>
   </button>
   `);
 scribbleToolBtns.push(btnScribbleHandLine)
 toolbarMiddleSection.child(btnScribbleHandLine)
 let btnScribbleHandText = p5Helper.createElement('div', `
-  <button class="mdc-icon-button" id="scribble-text" data-scribbletype='text'>
-    <svg id="icon-scribble-text" aria-hidden="true" data-scribbletype='text'>
-      <use xlink:href="#iconwenben" data-scribbletype='text'></use>
+  <button class="mdc-icon-button" id="scribble-text" data-tooltype='text'>
+    <svg id="icon-scribble-text" aria-hidden="true" data-tooltype='text'>
+      <use xlink:href="#iconwenben" data-tooltype='text'></use>
     </svg>
   </button>
   `);
@@ -314,8 +370,12 @@ export let switchScribbleMode = function () {
 
 
 function onSwitchScribbleMode() {
+  
   let scribbleCanvas = p5Helper.select('#scribble-canvas');
+  let cancelTiptextEle=p5Helper.select('#cancel-tiptext')
   if (modeScribbling) {
+
+    cancelTiptextEle.html('撤销创建')
     // BoardData.pInst.loop();
     buttonSwitchScribbleMode.style('color', primaryColor)
     scribbleToolBtns.forEach(view => {
@@ -325,12 +385,13 @@ function onSwitchScribbleMode() {
       view.hide();
     })
     SketchScribble.scribble_pInst.loop();
-
+    SketchData.pInst.noLoop();
     if (scribbleCanvas)
       // scribbleCanvas.style('visibility', 'visible');
       scribbleCanvas.show()
 
   } else {
+    cancelTiptextEle.html('撤销删除')
     if(SketchScribble.subdock) SketchScribble.subdock.remove();
     scribbleToolBtns.forEach(view => {
       view.hide()
@@ -341,7 +402,7 @@ function onSwitchScribbleMode() {
     buttonSwitchScribbleMode.style('color', 'inherit')
 
     SketchScribble.scribble_pInst.noLoop();
-
+    SketchData.pInst.loop();
     if (scribbleCanvas)
       // scribbleCanvas.style('visibility', 'hidden');
       scribbleCanvas.hide()
@@ -357,87 +418,3 @@ onSwitchScribbleMode();
 
 
 
-
-
-const leetboardHTMLString = ` 
-<div id="mainSketchHolder" class='in-Sketch-Main'>
-<svg id='insertingIcon' class="icon " aria-hidden="true" style="
-color: #000000;
-z-index: 4;
-position: absolute;">
-  <use id='insertingIconUse' href="#iconshulie"></use>
-</svg>
-
-<div class="dock " id="maindock">
-  <button class="tool dark-primary-text-color mdc-button mdc-button--unelevated" data-tooltype='insert2DArray'>
-    <div class="tool-surface" data-tooltype='insert2DArray'></div>
-    <svg class="icon mdc-button__icon" aria-hidden="true" data-tooltype='insert2DArray'>
-      <use href="#iconshulie" data-tooltype='insert2DArray'></use>
-    </svg>
-  </button>
-  <button class="tool dark-primary-text-color mdc-button mdc-button--unelevated" id="action-cancel"
-    data-tooltype='cancel'>
-    <div class="tool-surface" data-tooltype='cancel'></div>
-    <svg class="icon mdc-button__icon" aria-hidden="true" data-tooltype='cancel'>
-      <use xlink:href="#iconchexiao" data-tooltype='cancel'></use>
-    </svg>
-  </button>
-</div>
-</div>
-
-<div id="scribbleSketchHolder">
-<div class="dock " id="scribbledock">
-  <button class="tool dark-primary-text-color mdc-button" id="scribble-handwrite" data-scribbletype='handwrite'>
-    <div class="mdc-button__ripple" data-scribbletype='handwrite'></div>
-    <svg id="icon-scribble-handwrite" class="icon " aria-hidden="true" data-scribbletype='handwrite'>
-      <use xlink:href="#iconqianming" data-scribbletype='handwrite'></use>
-    </svg>
-  </button>
-  <button class="tool dark-primary-text-color mdc-button" id="scribble-rect" data-scribbletype='rect'>
-    <div class="mdc-button__ripple" data-scribbletype='rect'></div>
-    <svg id="icon-scribble-rect" class="icon" aria-hidden="true" data-scribbletype='rect'>
-      <use xlink:href="#iconjuxing" data-scribbletype='rect'></use>
-    </svg>
-  </button>
-  <button class="tool dark-primary-text-color mdc-button" id="scribble-ellipse" data-scribbletype='ellipse'>
-    <div class="mdc-button__ripple" data-scribbletype='ellipse'></div>
-    <svg id="icon-scribble-ellipse" class="icon" aria-hidden="true" data-scribbletype='ellipse'>
-      <use xlink:href="#icontuoyuan1copy" data-scribbletype='ellipse'></use>
-    </svg>
-  </button>
-  <button class="tool dark-primary-text-color mdc-button" id="scribble-arrow" data-scribbletype='arrow'>
-    <div class="mdc-button__ripple" data-scribbletype='arrow'></div>
-    <svg id="icon-scribble-arrow" class="icon " aria-hidden="true" data-scribbletype='arrow'>
-      <use xlink:href="#iconrightbottom" data-scribbletype='arrow'></use>
-    </svg>
-  </button>
-  <button class="tool dark-primary-text-color mdc-button" id="scribble-line" data-scribbletype='line'>
-    <div class="mdc-button__ripple" data-scribbletype='line'></div>
-    <svg id="icon-scribble-line" class="icon" aria-hidden="true" data-scribbletype='line'>
-      <use xlink:href="#iconline" data-scribbletype='line'></use>
-    </svg>
-  </button>
-  <button class="tool dark-primary-text-color mdc-button" id="scribble-text" data-scribbletype='text'>
-    <div class="mdc-button__ripple" data-scribbletype='text'></div>
-    <svg id="icon-scribble-text" class="icon" aria-hidden="true" data-scribbletype='text'>
-      <use xlink:href="#iconwenben" data-scribbletype='text'></use>
-    </svg>
-  </button>
-  <button class="tool dark-primary-text-color mdc-button" id="scribble-empty" data-scribbletype='empty'>
-    <div class="tool-surface" data-tooltype='empty'></div>
-    <svg id="icon-scribble-empty" class="icon" aria-hidden="true" data-scribbletype='empty'>
-      <use xlink:href="#iconqingkong" data-scribbletype='empty'></use>
-    </svg>
-</div>
-
-</div>
-
-<button id='mode-switch' class="mdc-button mdc-button--outlined">
-<div class="mdc-button__ripple"></div>
-<svg class="icon dark-primary-text-color" aria-hidden="true" data-action='toggleScribble'>
-  <use xlink:href="#iconqiehuan" data-action='toggleScribble'></use>
-</svg>
-<span class="mdc-button__label">打开批注图层</span>
-</button>
-
-`

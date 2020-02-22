@@ -4,7 +4,7 @@ import p5 = require('p5');
 import { BoardDataElement, LBLink, LBNode, LBTable, ConnnectedGraph, LBMap } from './elements';
 import { Vector } from 'p5';
 
-import { dataSketchContainer, boardToolbar, modeScribbling, buttonSwitchScribbleMode } from './crx_index';
+import { dataSketchContainer, boardToolbar, modeScribbling, buttonSwitchScribbleMode, switchScribbleMode, dataBoardContainer } from './crx_index';
 
 // import  './iconfont'
 export let recoverStack = new Array<Function>();
@@ -35,31 +35,41 @@ export let editInput: p5.Element;
 
 let dialogInsertasArrayorLinkedListEle: p5.Element;
 let dialogInsertasArrayorLinkedList: MDCDialog
-let dialogInfoEle:p5.Element;
-let dialogInfo:MDCDialog;
+
 
 //sketch 维护着业务需要的全局状态
 const sketchData = (pInst: p5) => {
-  pInst.mouseReleased = sketch_mouseReleased;
+
   function validateQuickInsert(text: string) {
     //todo 二维数组
     let t = text.trim();
+    if (t.startsWith("\"") && t.endsWith("\""))
+      t = t = t.substr(1, t.length - 2).trim();
     let table = new Array<Array<string>>();
     if (t.startsWith("[") && t.endsWith("]")) {
-      t = t.substr(1, t.length - 2);
-      let sArr = t.split(',');
-
-      if (sArr.every((value: string, index: number, array: string[]) => {
-        return value.startsWith("[") && value.endsWith("]")
-      })) {
+      t = t.substr(1, t.length - 2).trim();
+      let sArr: string[];
+      if (t.startsWith("[") && t.endsWith("]")) {
+        t = t.substr(1, t.length - 2).trim();
+        sArr = t.split("],[")
         sArr.forEach((s: string) => {
-          let currArr = s.substr(1, s.length - 2).split(',');
+          let currArr = s.split(',').map((str: string) => {
+            if (str.startsWith('\"') && str.endsWith('\"'))
+              return str.substr(1, str.length - 2);
+            return str;
+          })
           table.push(currArr);
         })
         inserting = (pos: Vector) => {
           insertTableWithContent(pos, table);
         }
-      } else {
+      }
+      else {
+        sArr = t.split(',').map((str: string) => {
+          if (str.startsWith('\"') && str.endsWith('\"'))
+            return str.substr(1, str.length - 2);
+          return str;
+        })
         dialogInsertasArrayorLinkedList.listen('MDCDialog:closed', (evt: any) => {
           switch (evt.detail.action) {
             case 'array':
@@ -90,41 +100,9 @@ const sketchData = (pInst: p5) => {
   pInst.setup = function () {
     canvas = pInst.createCanvas(1920, 1080);
     canvas.id('data-canvas')
-    canvas.parent(dataSketchContainer)
-    {
-      dialogInfoEle = pInst.createElement('div', `
-    <div class="mdc-dialog__container">
-      <div class="mdc-dialog__surface">
-        <h2 class="mdc-dialog__title" id="dialog-info-title"> Info</h2>
-        <div class="mdc-dialog__content" id="dialog-info-content">
-        <h4>一些快捷键</h4>
-        <ul>
-          <li><span>按住 L 键拖动创建一条连线</span></li>
-          <li><span>Ctrl+BackSapce 删除选中的元素</span></li>
-        </ul>
-        <h4>其他</h4>
-        <ul>
-          <li><span>亲测 Adblock 插件可能会导致卡顿掉帧，建议暂时停用</span></li>
-          <li><span>反馈、建议：</span><a href='mailto:rampaging9@gmail.com' target='_blank'
-                class='url'>rampaging9@gmail.com</a></li>
-        </ul>
-        </div>
+    canvas.parent(dataSketchContainer);
 
-      </div>
-    </div>
-    <div class="mdc-dialog__scrim"></div>
-    `)
-    }
-    dialogInfoEle.addClass("mdc-dialog")
-    dialogInfoEle.attribute('role', "alertdialog")
-    dialogInfoEle.attribute('aria-modal', "true")
-    dialogInfoEle.attribute('aria-labelledby', "dialog-info-title")
-    dialogInfoEle.attribute('aria-describedby', "dialog-info-content")
-    dialogInfoEle.style('z-index', '9999')
-
-    dialogInfo = new MDCDialog(dialogInfoEle.elt);
-    dialogInfo.close();
-
+    // (canvas.elt as HTMLElement).focus();
     {
       dialogInsertasArrayorLinkedListEle = pInst.createElement('div', `
     <div class="mdc-dialog__container">
@@ -176,6 +154,7 @@ const sketchData = (pInst: p5) => {
     });
 
     canvas.mousePressed(sketch_mousePressed)
+    canvas.mouseReleased(sketch_mouseReleased)
 
     dataSketchContainer.elt.addEventListener('paste', (ev: ClipboardEvent) => {
       let paste = (ev.clipboardData).getData('text');
@@ -196,10 +175,20 @@ const sketchData = (pInst: p5) => {
     //正在插入的元素类型
   }
 
-
+  pInst.mouseReleased = function(){
+    mouseReleaseDefault(mousePos.copy())
+  }
 
   pInst.doubleClicked = () => {
 
+  }
+
+  pInst.keyTyped = () => {
+    if (modeScribbling) return
+    if (document.activeElement !== dataBoardContainer.elt) return;
+    elements.some((ele) => {
+      return ele.keyTyped()
+    })
   }
   pInst.draw = function () {
     mousePos.set(pInst.mouseX, pInst.mouseY);
@@ -298,6 +287,7 @@ const sketchData = (pInst: p5) => {
   //   })
   // }
   function sketch_mousePressed() {
+
     // sketch_mouseClicked(mousePos.copy());
     // longPressTimeID = window.setTimeout(() => {
     //   sketch_longPressed(mousePos.copy())
@@ -307,7 +297,7 @@ const sketchData = (pInst: p5) => {
       inserting = null;
       return
     }
-
+    console.log('mousePressed')
     if (elements.some((ele) => {
       return (ele instanceof LBLink && ele.mousePress(mousePos.copy()));
     }))
@@ -326,8 +316,8 @@ const sketchData = (pInst: p5) => {
 
     if (
       // inserting == 'insertLink' || 
-      //按下 l 键
-      pInst.keyIsDown(76)) {
+      //按下 shift键
+      pInst.keyIsDown(16)) {
 
       let linkCreating = new LBLink(exports, mousePos.copy(), mousePos.copy(), true)
       linkCreating.onScribbling = "end";
@@ -336,7 +326,7 @@ const sketchData = (pInst: p5) => {
       inserting = null;
     } else {
       elements.forEach((ele) => {
-        ele.selected = false;
+        ele.cancelSelect();
       })
       //框选矩形的基准点
       selectionBoxAnchor = pressPos.copy();
@@ -349,10 +339,10 @@ const sketchData = (pInst: p5) => {
     //   linkConnecting.onScribbling = false
     //   links.splice(links.indexOf(linkConnecting),1)
     // }
+
     elements.forEach((ele) => {
       ele.dragging = null;
     })
-
     if (elements.some((ele) => {
       if (ele instanceof LBLink && ele.onScribbling) {
         ele.onScribbling = null;
@@ -376,12 +366,15 @@ const sketchData = (pInst: p5) => {
   function sketch_mouseReleased() {
     clearTimeout(longPressTimeID);
 
+    // window.setTimeout(() => {
+
+    //   console.log('cancel dragging')
+    // }, 300)
+
     //元素消不消费事件与 pos 是不是在元素里没有关系 ，因此所有元素都不消费事件也不意味着这个点就在所谓的”空白区“ ，仅仅是当做一个坐标 然后由 board 层处理
-    if (!elements.some((ele) => {
-      return ele.mouseRelease(mousePos)
-    })) {
-      mouseReleaseDefault(mousePos)
-    }
+    elements.some((ele) => {
+      return ele.mouseRelease(mousePos.copy())
+    })
   }
 
 
@@ -428,6 +421,12 @@ const sketchData = (pInst: p5) => {
 
   pInst.keyPressed = function () {
     if (modeScribbling) return;
+    if (document.activeElement !== dataBoardContainer.elt) return;
+    //ctrl+z /cmd+z
+    if (pInst.keyCode == 90 && (pInst.keyIsDown(91) || pInst.keyIsDown(17))) {
+      cancelDeletion()
+      return;
+    }
     //优先由全局处理的逻辑
     switch (pInst.keyCode) {
       case pInst.BACKSPACE:
@@ -727,24 +726,23 @@ let thisModule = exports;
 //   union
 // }
 
-
+function cancelDeletion() {
+  if (recoverStack.length !== 0)
+    recoverStack.pop()();
+}
 export let onToolbarClicked = function (ev: MouseEvent) {
   if (modeScribbling) return;
   let target = ev.target;
   let type = (target as Element).getAttribute('data-tooltype');
   switch (type) {
-    case 'info':
-      dialogInfo.open();
-      break;
     case 'cancel':
-      if (recoverStack.length !== 0)
-        recoverStack.pop()();
+      cancelDeletion();
       break;
     case 'empty':
-      let eles=elements.slice(0,elements.length);
-      elements.splice(0,elements.length)
-      recoverStack.push(()=>{
-        elements=elements.concat(eles);
+      let eles = elements.slice(0, elements.length);
+      elements.splice(0, elements.length)
+      recoverStack.push(() => {
+        elements = elements.concat(eles);
       })
       break;
     case 'insert2DArray':

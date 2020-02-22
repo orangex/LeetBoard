@@ -10,10 +10,12 @@ const scribbleType_ellipse = 'ellipse';
 const scribbleType_arrow = 'arrow';
 const scribbleType_line = 'line';
 const scribbleType_text = 'text';
-const scribbleType_empty = 'empty';
+
+// const scribbleType_empty = 'empty';
 // let st:
 // scribbleType_handwrite|scribbleType_rect|scribbleType_ellipse|scribbleType_arrow|scribbleType_line|scribbleType_text;
-type ScribbleType = 'handwrite' | 'rect' | 'ellipse' | 'arrow' | 'line' | 'text' | 'empty';
+type ScribbleType = 'handwrite' | 'rect' | 'ellipse' | 'arrow' | 'line' | 'text';
+
 type StrokeType = "strokecolor" | "strokeweight"
 type StrokeWeightPresetKey = 'subdock-strokeweight-light' | 'subdock-strokeweight-medium' | 'subdock-strokeweight-weight'
 type StrokeColorPresetKey = 'subdock-palette-red' | 'subdock-palette-blue' | 'subdock-palette-yellow' | 'subdock-palette-orange' | 'subdock-palette-white' | 'subdock-palette-gray'
@@ -39,7 +41,7 @@ let scribblePenArgsMap = new Map<ScribbleType, Map<StrokeType, StrokeColorPreset
 let elementScribbling: BoardScribbleElement;
 let scribblingAnchor;
 export let mousePos: p5.Vector;
-let canvas: p5.Element;
+export let canvas: p5.Element;
 let currentScribbleType: ScribbleType = null;
 export let subdock: p5.Element;
 let elementStack = new Array<BoardScribbleElement>();//TODO 理论上撤销的都是行为，应该是个存 action的 actionStack，不过所有的行为其实都是绘画，所有存”drawable“是目前看起来更好的方法
@@ -48,14 +50,15 @@ window.onresize = () => {
 }
 
 const sketchScribble = (pInst: p5) => {
-    pInst.mouseReleased=sketch_mouseReleased;
+    pInst.mouseReleased = sketch_mouseReleased;
     pInst.setup = function () {
         mousePos = pInst.createVector(pInst.width / 2, pInst.height / 2);
         canvas = pInst.createCanvas(1920, 1080);
         canvas.id('scribble-canvas');
         canvas.hide();
+        // (canvas.elt as HTMLElement).focus();
         let leetcodeMainContainer = document.querySelector("div[class^=main__]");
-    
+
         canvas.parent(leetcodeMainContainer);
         // canvas.style('position', 'absolute');
         // canvas.style('display', 'block');
@@ -80,27 +83,32 @@ const sketchScribble = (pInst: p5) => {
 
         pInst.clear();
         pInst.background('rgba(0,0, 0,0.1)');
-  
+
         elementStack.forEach(drawable => {
             drawable.draw();
         });
     }
     pInst.keyPressed = function () {
         if (!modeScribbling) return;
+    //ctrl+z /cmd+z
+    if(pInst.keyCode==90 && (pInst.keyIsDown(91)||pInst.keyIsDown(17))){
+        cancelCreation()
+        return;
+      }
         //优先由全局处理的逻辑
         switch (pInst.keyCode) {
             //esc
-          case 27:
-            switchScribbleMode();
-            break;
-          default:
-            break;
+            case 27:
+                switchScribbleMode();
+                break;
+            default:
+                break;
         }
         //分发给元素去处理
-    
-    
+
+
     }
-    
+
 
     function sketch_mousePressed(ev: MouseEvent) {
         console.log('scribble canvas pressed')
@@ -152,7 +160,7 @@ const sketchScribble = (pInst: p5) => {
 
     function sketch_mouseReleased() {
         if (!modeScribbling) return;
-        if(elementScribbling)
+        if (elementScribbling)
             elementScribbling.onScribbling = false;
     }
 
@@ -161,193 +169,199 @@ const sketchScribble = (pInst: p5) => {
 export let scribble_pInst = new p5(sketchScribble);
 
 
-export let onToolbarClicked=function(ev: MouseEvent){
+export let onToolbarClicked = function (ev: MouseEvent) {
     {
-        if(!modeScribbling) return;
+        if (!modeScribbling) return;
         let target = ev.target;
         if (!(target instanceof Element)) return;
-        let scribbletype = target.getAttribute('data-scribbletype') as ScribbleType;
+        let tooltype = target.getAttribute('data-tooltype');
+        let scribbletype: ScribbleType;
+        switch (tooltype) {
+            case 'cancel':
+                cancelCreation()
+                break;
+            case 'empty':
+                emptySketch()
+                break;
+            default:
 
-        //点选的 scribbletype 如果和目前一样 就无事发生
-        if (scribbletype == currentScribbleType) return false;
-        //如果该类型的颜色、粗细值未缓存过 则 new 一个 map
-        if (!scribblePenArgsMap.get(scribbletype)) scribblePenArgsMap.set(scribbletype, new Map());
+                //点选的 scribbletype 如果和目前一样 就无事发生
+                scribbletype = tooltype as ScribbleType;
+                if (scribbletype == currentScribbleType) return false;
 
-        let old = scribble_pInst.select(`#scribble-${currentScribbleType}`, 'div');
-        // scribbledock.elt.querySelector(`svg[data-scribbletype=${scribbleType}]`);
-        //todo 颜色管理
-        if (old) {
-            old.toggleClass('dark-primary-text-color');
-            old.toggleClass('accent-text-color');
-        }
+                //如果该类型的颜色、粗细值未缓存过 则 new 一个 map
+                if (!scribblePenArgsMap.get(scribbletype)) scribblePenArgsMap.set(scribbletype, new Map());
 
-        if (subdock) subdock.remove();
-        let n: p5.Element = scribble_pInst.select(`#scribble-${scribbletype}`, 'div');;
-        currentScribbleType = scribbletype;
-        if (n) {
-            n.toggleClass('dark-primary-text-color');
-            n.toggleClass('accent-text-color');
-        }
-        //todo subdock 是p5ScribbleInst的创建的
-        subdock = scribble_pInst.createElement('div');
-        let temp=document.querySelector("div[class^=css-][class*=-HeaderCn]");
-        temp.setAttribute('style','position:relative');
-        subdock.parent(temp);
-        // subdock.parent(document.querySelector("div[class^=css-][class*=-Container]"))
-        subdock.id('scribble-subdock')
+                let old = scribble_pInst.select(`#scribble-${currentScribbleType}`, 'div');
+                // scribbledock.elt.querySelector(`svg[data-tooltype=${scribbleType}]`);
+                //todo 颜色管理
+                if (old) {
+                    old.toggleClass('dark-primary-text-color');
+                    old.toggleClass('accent-text-color');
+                }
 
-        switch (currentScribbleType) {
-            case scribbleType_handwrite:
-            case scribbleType_rect:
-            case scribbleType_ellipse:
-            case scribbleType_arrow:
-            case scribbleType_line:
-            case scribbleType_text:
+                if (subdock) subdock.remove();
+                let n: p5.Element = scribble_pInst.select(`#scribble-${scribbletype}`, 'div');;
+                currentScribbleType = scribbletype;
+                if (n) {
+                    n.toggleClass('dark-primary-text-color');
+                    n.toggleClass('accent-text-color');
+                }
+                //todo subdock 是p5ScribbleInst的创建的
+                subdock = scribble_pInst.createElement('div');
+                let temp = document.querySelector("div[class^=css-][class*=-HeaderCn]");
+                temp.setAttribute('style', 'position:relative');
+                subdock.parent(temp);
+                // subdock.parent(document.querySelector("div[class^=css-][class*=-Container]"))
+                subdock.id('scribble-subdock')
+
                 let palette = createPaletteDiv();
                 let strokeweightArea = createstrokeweightDiv();
                 subdock.child(strokeweightArea);
                 subdock.child(palette);
+
                 break;
-            case scribbleType_empty:
-                emptySketch()
+        }
+
+    }
+}
+//每次选择一个 scribbletype 都是现场创建该 type 对应的 subdock
+function createstrokeweightDiv() {
+    let strokeweightArea = scribble_pInst.createDiv();
+    strokeweightArea.class('subdock-toolscontainer')
+    let light = scribble_pInst.createDiv();
+    // light.style('background', '#FFFFFF');
+    light.class('subdock-stokesize-item');
+    light.style('width', '8px');
+    light.style('height', '8px');
+    light.id('subdock-strokeweight-light');
+    strokeweightArea.child(light);
+    let medium = scribble_pInst.createDiv();
+    // medium.style('background', '#FFFFFF');
+    medium.class('subdock-stokesize-item');
+    medium.style('width', '13px');
+    medium.style('height', '13px');
+    medium.id('subdock-strokeweight-medium');
+    strokeweightArea.child(medium);
+    let weight = scribble_pInst.createDiv();
+    // weight.style('background', '#FFFFFF');
+    weight.class('subdock-stokesize-item');
+    weight.style('width', '18px');
+    weight.style('height', '18px');
+    weight.id('subdock-strokeweight-weight');
+    strokeweightArea.child(weight);
+
+
+    strokeweightArea.mouseClicked((ev: MouseEvent) => {
+        //当前ScribbleType的之前的画笔（weight）参数
+        let oldselected = scribble_pInst.select(`#${scribblePenArgsMap.get(currentScribbleType).get('strokeweight' as StrokeType)}`);
+        let target = ev.target
+        if (!(target instanceof Element)) return;
+        switch (target.id) {
+            case 'subdock-strokeweight-light':
+                if (oldselected) oldselected.toggleClass('subdock-item-selected')
+                light.elt.classList.add('subdock-item-selected');
+                scribblePenArgsMap.get(currentScribbleType).set("strokeweight", target.id);
+                // p5Scribble.strokeWeight(1.5)
+                break
+            case 'subdock-strokeweight-medium':
+                if (oldselected) oldselected.toggleClass('subdock-item-selected')
+                medium.elt.classList.add('subdock-item-selected');
+                scribblePenArgsMap.get(currentScribbleType).set('strokeweight', target.id);
+                // p5Scribble.strokeWeight(3)
+                break
+            case 'subdock-strokeweight-weight':
+                if (oldselected) oldselected.toggleClass('subdock-item-selected')
+                weight.elt.classList.add('subdock-item-selected');
+                scribblePenArgsMap.get(currentScribbleType).set('strokeweight', target.id);
+                // p5Scribble.strokeWeight(4.5)
+                break;
             default:
                 break;
         }
-    }
+    })
+
+    let oldselected = scribble_pInst.select(`#${scribblePenArgsMap.get(currentScribbleType).get('strokeweight' as StrokeType)}`);
+    if (!oldselected)
+        medium.elt.click();
+    else
+        oldselected.elt.click();
+
+    return strokeweightArea;
 }
-    //每次选择一个 scribbletype 都是现场创建该 type 对应的 subdock
-    function createstrokeweightDiv() {
-        let strokeweightArea = scribble_pInst.createDiv();
-        strokeweightArea.class('subdock-toolscontainer')
-        let light = scribble_pInst.createDiv();
-        // light.style('background', '#FFFFFF');
-        light.class('subdock-stokesize-item');
-        light.style('width', '8px');
-        light.style('height', '8px');
-        light.id('subdock-strokeweight-light');
-        strokeweightArea.child(light);
-        let medium = scribble_pInst.createDiv();
-        // medium.style('background', '#FFFFFF');
-        medium.class('subdock-stokesize-item');
-        medium.style('width', '13px');
-        medium.style('height', '13px');
-        medium.id('subdock-strokeweight-medium');
-        strokeweightArea.child(medium);
-        let weight = scribble_pInst.createDiv();
-        // weight.style('background', '#FFFFFF');
-        weight.class('subdock-stokesize-item');
-        weight.style('width', '18px');
-        weight.style('height', '18px');
-        weight.id('subdock-strokeweight-weight');
-        strokeweightArea.child(weight);
+//每次选择一个 scribbletype 都是现场创建该 type 对应的 subdock
+function createPaletteDiv() {
+    let palette = scribble_pInst.createDiv();
+    palette.class('subdock-toolscontainer')
+    let red = scribble_pInst.createDiv();
+    red.id('subdock-palette-red')
+    red.style('background', strokecolorPreset.get(red.id()));
+    red.class('subdock-palette-item');
+    palette.child(red);
+    let blue = scribble_pInst.createDiv();
+    blue.id('subdock-palette-blue')
+    blue.class('subdock-palette-item');
+    blue.style('background', strokecolorPreset.get(blue.id()))
+    palette.child(blue);
+    let yellow = scribble_pInst.createDiv();
+    yellow.id('subdock-palette-yellow')
+    yellow.class('subdock-palette-item');
+    yellow.style('background', strokecolorPreset.get(yellow.id()))
+    palette.child(yellow);
+    let orange = scribble_pInst.createDiv();
+    orange.id('subdock-palette-orange')
+    orange.class('subdock-palette-item');
+    orange.style('background', strokecolorPreset.get(orange.id()))
+    palette.child(orange);
+    let white = scribble_pInst.createDiv();
+    white.id('subdock-palette-white')
+    white.class('subdock-palette-item');
+    white.style('background', strokecolorPreset.get(white.id()))
+    palette.child(white);
+    let gray = scribble_pInst.createDiv();
+    gray.id('subdock-palette-gray')
+    gray.class('subdock-palette-item');
+    gray.style('background', strokecolorPreset.get(gray.id()))
+    palette.child(gray);
 
 
-        strokeweightArea.mouseClicked((ev: MouseEvent) => {
-            //当前ScribbleType的之前的画笔（weight）参数
-            let oldselected = scribble_pInst.select(`#${scribblePenArgsMap.get(currentScribbleType).get('strokeweight' as StrokeType)}`);
-            let target = ev.target
-            if (!(target instanceof Element)) return;
-            switch (target.id) {
-                case 'subdock-strokeweight-light':
-                    if (oldselected) oldselected.toggleClass('subdock-item-selected')
-                    light.elt.classList.add('subdock-item-selected');
-                    scribblePenArgsMap.get(currentScribbleType).set("strokeweight", target.id);
-                    // p5Scribble.strokeWeight(1.5)
-                    break
-                case 'subdock-strokeweight-medium':
-                    if (oldselected) oldselected.toggleClass('subdock-item-selected')
-                    medium.elt.classList.add('subdock-item-selected');
-                    scribblePenArgsMap.get(currentScribbleType).set('strokeweight', target.id);
-                    // p5Scribble.strokeWeight(3)
-                    break
-                case 'subdock-strokeweight-weight':
-                    if (oldselected) oldselected.toggleClass('subdock-item-selected')
-                    weight.elt.classList.add('subdock-item-selected');
-                    scribblePenArgsMap.get(currentScribbleType).set('strokeweight', target.id);
-                    // p5Scribble.strokeWeight(4.5)
-                    break;
-                default:
-                    break;
-            }
-        })
-
-        let oldselected = scribble_pInst.select(`#${scribblePenArgsMap.get(currentScribbleType).get('strokeweight' as StrokeType)}`);
-        if (!oldselected)
-            medium.elt.click();
-        else
-            oldselected.elt.click();
-
-        return strokeweightArea;
-    }
-    //每次选择一个 scribbletype 都是现场创建该 type 对应的 subdock
-    function createPaletteDiv() {
-        let palette = scribble_pInst.createDiv();
-        palette.class('subdock-toolscontainer')
-        let red = scribble_pInst.createDiv();
-        red.id('subdock-palette-red')
-        red.style('background', strokecolorPreset.get(red.id()));
-        red.class('subdock-palette-item');
-        palette.child(red);
-        let blue = scribble_pInst.createDiv();
-        blue.id('subdock-palette-blue')
-        blue.class('subdock-palette-item');
-        blue.style('background', strokecolorPreset.get(blue.id()))
-        palette.child(blue);
-        let yellow = scribble_pInst.createDiv();
-        yellow.id('subdock-palette-yellow')
-        yellow.class('subdock-palette-item');
-        yellow.style('background', strokecolorPreset.get(yellow.id()))
-        palette.child(yellow);
-        let orange = scribble_pInst.createDiv();
-        orange.id('subdock-palette-orange')
-        orange.class('subdock-palette-item');
-        orange.style('background', strokecolorPreset.get(orange.id()))
-        palette.child(orange);
-        let white = scribble_pInst.createDiv();
-        white.id('subdock-palette-white')
-        white.class('subdock-palette-item');
-        white.style('background', strokecolorPreset.get(white.id()))
-        palette.child(white);
-        let gray = scribble_pInst.createDiv();
-        gray.id('subdock-palette-gray')
-        gray.class('subdock-palette-item');
-        gray.style('background', strokecolorPreset.get(gray.id()))
-        palette.child(gray);
-
-
-        palette.mouseClicked((ev: MouseEvent) => {
-            let oldSelected = scribble_pInst.select(`#${scribblePenArgsMap.get(currentScribbleType).get('strokecolor')}`);
-            if (!(ev.target instanceof Element)) return;
-            switch (ev.target.id) {
-                case 'subdock-palette-red':
-                case 'subdock-palette-blue':
-                case 'subdock-palette-yellow':
-                case 'subdock-palette-orange':
-                case 'subdock-palette-white':
-                case 'subdock-palette-gray':
-                    let newSelected = scribble_pInst.select(`#${ev.target.id}`);
-                    if (oldSelected)
-                        oldSelected.toggleClass('subdock-item-selected')
-                    newSelected.elt.classList.add('subdock-item-selected');
-                    scribblePenArgsMap.get(currentScribbleType).set("strokecolor", ev.target.id);
-                    break
-                default:
-                    break;
-            }
-        })
+    palette.mouseClicked((ev: MouseEvent) => {
         let oldSelected = scribble_pInst.select(`#${scribblePenArgsMap.get(currentScribbleType).get('strokecolor')}`);
-        //默认选中红色
-        if (!oldSelected)
-            red.elt.click()
-        else
-            oldSelected.elt.click();
-        return palette;
-    }
+        if (!(ev.target instanceof Element)) return;
+        switch (ev.target.id) {
+            case 'subdock-palette-red':
+            case 'subdock-palette-blue':
+            case 'subdock-palette-yellow':
+            case 'subdock-palette-orange':
+            case 'subdock-palette-white':
+            case 'subdock-palette-gray':
+                let newSelected = scribble_pInst.select(`#${ev.target.id}`);
+                if (oldSelected)
+                    oldSelected.toggleClass('subdock-item-selected')
+                newSelected.elt.classList.add('subdock-item-selected');
+                scribblePenArgsMap.get(currentScribbleType).set("strokecolor", ev.target.id);
+                break
+            default:
+                break;
+        }
+    })
+    let oldSelected = scribble_pInst.select(`#${scribblePenArgsMap.get(currentScribbleType).get('strokecolor')}`);
+    //默认选中红色
+    if (!oldSelected)
+        red.elt.click()
+    else
+        oldSelected.elt.click();
+    return palette;
+}
 
-    function emptySketch() {
-        while (elementStack.length > 0)
-            elementStack.pop();
-    }
+function cancelCreation(){
+    if (elementStack.length > 0)
+    elementStack.pop();
+}
+function emptySketch() {
+    while (elementStack.length > 0)
+        elementStack.pop();
+}
     // let scribble = new Scribble(sketchScribble);
     // scribble.scribbleFillingCircle = function (x, y, r, gap, angle) {
     //     let vertexV = sketchScribble.createVector(r, 0);

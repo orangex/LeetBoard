@@ -125,7 +125,14 @@ export abstract class BoardDataElement extends ResponsiveElement {
 
     abstract posSelectable(pos: Vector): boolean
 
+    cancelSelect() {
+        this.selected = false;
+    }
+    keyTyped() {
+        return false;
+    }
     mousePress(pressPos: Vector): boolean {
+        //cmd ctrl 多选
         if (this.pInst.keyIsDown(91) || this.pInst.keyIsDown(17)) {
             if (this.posWithin) {
                 this.selected = true;
@@ -151,7 +158,7 @@ export abstract class BoardDataElement extends ResponsiveElement {
                     this.selected = true;
                     this.dragging = p5.Vector.sub(this.datumPoint, pressPos);
                 }
-
+                console.log('start dragging')
                 //     
                 return true;
             } else
@@ -250,8 +257,8 @@ export class LBNode extends BoardDataElement {
     }
 
     posDraggable(mousePos: Vector) {
-        if(!this.posWithin(mousePos))  return false;
-        if(this.posSelectable(mousePos)) return false;
+        if (!this.posWithin(mousePos)) return false;
+        if (this.posSelectable(mousePos)) return false;
         return true;
     }
 
@@ -278,30 +285,41 @@ export class LBNode extends BoardDataElement {
 
 
 
-        if (this.pressTime == 1) {
-            clearTimeout(this.pressTimeoutID)
-            if (this.posEditable(pressPos)) {
-                this.edit()
-            }
-            this.pressTime = 0;
-        } else {
-            this.pressTime++;
-            this.pressTimeoutID = window.setTimeout(() => {
-                this.pressTime=0;
-                //l 键
-                if (super.mousePress(pressPos)) return true;
-                if (this.posWithin(pressPos) && this.pInst.keyIsDown(76)) {
-                    let linkCreating = new LBLink(this.board, this, this.board.mousePos, true)
-                    linkCreating.onScribbling = "end";
-                    // this.board.links.add(linkCreating);
-                    this.board.elements.push(linkCreating)
-                    return true;
-                }
-            }, 150)
-        }
+        // if (this.pressTime == 1) {
+        //     clearTimeout(this.pressTimeoutID)
+        //     if (this.posEditable(pressPos)) {
+        //         this.edit()
+        //     }
+        //     this.pressTime = 0;
+        // } else {
+        //     this.pressTime++;
+        //     this.pressTimeoutID = window.setTimeout(() => {
+        //         this.pressTime = 0;
+
+                
+        //     }, 150)
+        // }
 
 
+        //16 = shift
+        if (this.pInst.keyIsDown(16)) {
+            let linkCreating = new LBLink(this.board, this, this.board.mousePos, true)
+            linkCreating.onScribbling = "end";
+            // this.board.links.add(linkCreating);
+            this.board.elements.push(linkCreating)
+            return true;
+        } 
+        if (super.mousePress(pressPos)) return true;
         return true
+    }
+    keyTyped(): boolean {
+        if (!this.selected) return false;
+        if (this.pInst.keyCode == 13) return false;
+        if (!this.editing) {
+            this.edit();
+            return true;
+        }
+        return false;
     }
     mouseRelease(releasePos: Vector) {
         console.log('node release')
@@ -346,15 +364,15 @@ export class LBNode extends BoardDataElement {
                     // (input.elt as HTMLInputElement).blur();
                 }
             };
-            window.setTimeout(()=>{
+            window.setTimeout(() => {
                 input.show()
                 input.elt.focus();
                 (input.elt as HTMLInputElement).onblur = () => {
                     this.editing = false;
                     input.hide()
                 };
-            },100)
-    
+            }, 100)
+
 
             input.value(this.titleContent);
             (input.elt as HTMLInputElement).select()
@@ -496,7 +514,7 @@ export class LBLink extends BoardDataElement {
     }
 
     mousePress(pressPos: Vector): boolean {
-        if(!this.mouseWithin) return false;
+        if (!this.mouseWithin) return false;
         if (super.mousePress(pressPos)) return true;
         if (this.posChangeDirection(pressPos)) {
             this.nextDirection();
@@ -701,10 +719,10 @@ export class LBMap extends BoardDataElement {
 
         if (this.posAddColumn(BoardData.mousePos))
             this.pInst.cursor(this.pInst.HAND)
-        if (this.posSelectColumn(BoardData.mousePos)!==null) {
+        if (this.posSelectColumn(BoardData.mousePos) !== null) {
             this.pInst.cursor('s-resize')
         }
-        if(this.posDraggable(BoardData.mousePos)){
+        if (this.posDraggable(BoardData.mousePos)) {
             this.pInst.cursor(this.pInst.MOVE)
         }
 
@@ -777,8 +795,21 @@ export class LBMap extends BoardDataElement {
         let cIndex = Math.floor((pos.x - this.leftTop.x) / this.cellWidth);
         return (cIndex == this.colNum && (rIndex == 0 || rIndex == 1))
     }
+
+    keyTyped(): boolean {
+        if (this.pInst.keyCode == 13) return false;
+        if (!this.innerSelected) return false;
+        if (this.editing) return false;
+        if (this.innerSelected.kind == 'cell') {
+            this.edit(this.innerSelected.rowIndex, this.innerSelected.colIndex);
+            return true;
+        }
+        return false;
+    }
     //进入编辑状态
     edit(rIndex: number, cIndex: number) {
+        // this.selected=false;
+
         this.editing = true;
         this.innerSelected = {
             kind: 'cell',
@@ -797,14 +828,14 @@ export class LBMap extends BoardDataElement {
                 // (input.elt as HTMLInputElement).blur();
             }
         };
-        window.setTimeout(()=>{
+        window.setTimeout(() => {
             input.show()
             input.elt.focus();
             (input.elt as HTMLInputElement).onblur = () => {
                 this.editing = false;
                 input.hide()
             };
-        },100)
+        }, 100)
         // (input.elt as HTMLInputElement).onblur = () => {
         //     this.editing = false;
         //     input.hide();
@@ -827,6 +858,9 @@ export class LBMap extends BoardDataElement {
         let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
         if (rIndex < 0 || rIndex >= 2 || cIndex < 0 || cIndex >= this.colNum) return false;
 
+        this.board.elements.forEach((ele) => {
+            ele.cancelSelect();
+        })
         //否则选中的是当前 cell
         this.innerSelected = {
             kind: 'cell',
@@ -834,6 +868,11 @@ export class LBMap extends BoardDataElement {
             colIndex: cIndex,
         }
         return true;
+    }
+
+    cancelSelect() {
+        super.cancelSelect();
+        this.innerSelected = null;
     }
 
     //判定能否开始拖拽
@@ -904,34 +943,36 @@ export class LBMap extends BoardDataElement {
     mousePress(pressPos: Vector) {
         if (!this.mouseWithin) return false;
 
-        if (this.pressTime == 1) {
-            clearTimeout(this.pressTimeoutID)
-            this.doubleClick(pressPos)
-            this.pressTime = 0;
-        } else {
-            this.pressTime++;
-            this.pressTimeoutID = window.setTimeout(() => {
-                this.pressTime=0;
-                if (super.mousePress(pressPos)) return true;
-                if (this.posAddColumn(pressPos)) {
-                    this.colNum++
-                    this.keys.push('');
-                    this.values.push('');
-                    return true;
-                }
-                if (this.posSelectColumn(pressPos)!==null) {
-                    this.innerSelected = {
-                        kind: 'column',
-                        colIndex: this.posSelectColumn(pressPos)
-                    }
-                    this.selected = false;
-                    return true;
-                }
-                if (this.posDraggable(pressPos)) return true;
+        // if (this.pressTime == 1) {
+        //     clearTimeout(this.pressTimeoutID)
+        //     this.doubleClick(pressPos)
+        //     this.pressTime = 0;
+        // } else {
+        //     this.pressTime++;
+        //     this.pressTimeoutID = window.setTimeout(() => {
+        //         this.pressTime = 0;
 
-                return this.selectCell(pressPos);
-            }, 120)
+        //     }, 120)
+        // }
+
+        if (super.mousePress(pressPos)) return true;
+        if (this.posAddColumn(pressPos)) {
+            this.colNum++
+            this.keys.push('');
+            this.values.push('');
+            return true;
         }
+        if (this.posSelectColumn(pressPos) !== null) {
+            this.innerSelected = {
+                kind: 'column',
+                colIndex: this.posSelectColumn(pressPos)
+            }
+            this.selected = false;
+            return true;
+        }
+        if (this.posDraggable(pressPos)) return true;
+
+        return this.selectCell(pressPos);
         return true;
 
     }
@@ -1001,8 +1042,8 @@ export class LBTable extends BoardDataElement {
     innerSelected: Selected_Row | Selected_Column | Selected_Cell
     //行号列号是绘制的结果，数据以 content[0][0]为左上定点。
     // pointersByCell = new Array<Array<Array<LBTable.Array2DPointer>>>();
-    cellWidth = 30;
-    cellHeight = 30;
+    cellWidth = 45;
+    cellHeight = 45;
     title: string | number;
     titleInput: p5.Element
     // cellContentInput: Array<Array<p5.Element>>;
@@ -1031,8 +1072,8 @@ export class LBTable extends BoardDataElement {
             this.colNum = maxCol;
         } else {
             this.cellContent = new Array<Array<string>>();
-            this.rowNum = 3;
-            this.colNum = 4;
+            this.rowNum = 1;
+            this.colNum = 3;
             // this.cellContent.length = this.rowNum;
             for (let i = 0; i < this.rowNum; i++) {
                 let currRowContent = new Array<string>();
@@ -1166,12 +1207,17 @@ export class LBTable extends BoardDataElement {
             this.datumPoint = p5.Vector.add(this.board.mousePos, this.dragging);
         }
 
+        this.pInst.push();
+        this.pInst.stroke(128, 128, 128, 128);
+        this.pInst.strokeWeight(1)
+
         for (let i = 0; i <= this.rowNum; i++) {
             this.pInst.line(this.leftTop.x, this.leftTop.y + i * this.cellHeight, this.leftTop.x + this.width, this.leftTop.y + i * this.cellHeight);
         }
         for (let i = 0; i <= this.colNum; i++) {
             this.pInst.line(this.leftTop.x + i * this.cellWidth, this.leftTop.y, this.leftTop.x + i * this.cellWidth, this.leftTop.y + this.height);
         }
+        this.pInst.pop();
         // let pointersCount = [];
         // for (let r = 0; r < this.rowNum; r++) {
         //     pointersCount.push([]);
@@ -1210,8 +1256,9 @@ export class LBTable extends BoardDataElement {
         this.pInst.pop();
 
         this.pInst.push()
-        this.pInst.strokeWeight(0.3)
+        this.pInst.strokeWeight(0.4)
         this.pInst.textFont('Roboto');
+        this.pInst.textSize(14);
         this.pInst.textAlign(this.pInst.CENTER, this.pInst.CENTER);
 
         for (let i = 0; i < this.rowNum; i++)
@@ -1231,10 +1278,12 @@ export class LBTable extends BoardDataElement {
         this.pInst.pop()
 
         //行号
-        if (this.mouseWithin && !this.dragging) {
+        // if (this.mouseWithin && !this.dragging) 
+        {
             this.pInst.push()
-            this.pInst.strokeWeight(0.3)
+            this.pInst.strokeWeight(0.4)
             this.pInst.textFont('Roboto');
+            this.pInst.fill(128, 128, 128);
             this.pInst.textAlign(this.pInst.CENTER, this.pInst.CENTER);
             for (let i = 0; i < this.rowNum; i++) {
                 let x = this.leftTop.x - this.cellWidth / 2;
@@ -1257,7 +1306,16 @@ export class LBTable extends BoardDataElement {
         let titleY = this.leftTop.y + this.height + 18;
         // this.titleInput.position(titleX - Math.floor((this.titleInput.size() as Size).width / 2), titleY - (this.titleInput.size() as Size).height / 2);
     }
-
+    keyTyped(): boolean {
+        if (this.pInst.keyCode == 13) return false;
+        if (!this.innerSelected) return false;
+        if (this.editing) return false;
+        if (this.innerSelected.kind == 'cell') {
+            this.edit(this.innerSelected.rowIndex, this.innerSelected.colIndex);
+            return true;
+        }
+        return false;
+    }
     //进入编辑状态
     edit(rIndex: number, cIndex: number) {
         this.editing = true;
@@ -1277,14 +1335,14 @@ export class LBTable extends BoardDataElement {
                 // (input.elt as HTMLInputElement).blur();
             }
         };
-        window.setTimeout(()=>{
+        window.setTimeout(() => {
             input.show()
             input.elt.focus();
             (input.elt as HTMLInputElement).onblur = () => {
                 this.editing = false;
                 input.hide()
             };
-        },100)
+        }, 100)
 
 
         input.value(this.cellContent[rIndex][cIndex]);
@@ -1296,12 +1354,19 @@ export class LBTable extends BoardDataElement {
         input.position(lt.x + this.cellWidth / 2 - Math.floor((input.size() as any).width / 2), lt.y + this.cellHeight + 2)
 
     }
+
+    cancelSelect() {
+        super.cancelSelect();
+        this.innerSelected = null;
+    }
     //判定选中 return 该 pos上是否成功选中
     selectCell(mousePos: Vector) {
         let rIndex = Math.floor((mousePos.y - this.leftTop.y) / this.cellHeight);
         let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
         if (rIndex < 0 || rIndex >= this.rowNum || cIndex < 0 || cIndex >= this.colNum) return false;
-        this.selected = true;
+        this.board.elements.forEach((ele) => {
+            ele.cancelSelect();
+        })
         //否则选中的是当前 cell
         this.innerSelected = {
             kind: "cell",
@@ -1377,80 +1442,77 @@ export class LBTable extends BoardDataElement {
     mousePress(pressPos: Vector) {
         if (!this.mouseWithin) return false;
 
+        // if (this.pressTime == 1) {
+        //     clearTimeout(this.pressTimeoutID)
+        //     this.doubleClick(pressPos)
+        //     this.pressTime = 0;
+        // } else {
+        //     this.pressTime++;
+        //     this.pressTimeoutID = window.setTimeout(() => {
+        //         this.pressTime=0;
 
+        //     }, 150)
+        // }
 
-        if (this.pressTime == 1) {
-            clearTimeout(this.pressTimeoutID)
-            this.doubleClick(pressPos)
-
-            this.pressTime = 0;
-        } else {
-            this.pressTime++;
-            this.pressTimeoutID = window.setTimeout(() => {
-                if (super.mousePress(pressPos)) return true;
-
-                this.pressTime=0;
-                //选择列
-                if (this.posSelectColumn(pressPos) !== null) {
-                    this.innerSelected = {
-                        kind: 'column',
-                        colIndex: this.posSelectColumn(pressPos)
-                    }
-                    this.selected = false;
-                    return true;
-                }
-                //选择行
-                if (this.posSelectRow(pressPos) !== null) {
-                    this.innerSelected = {
-                        kind: 'row',
-                        rowIndex: this.posSelectRow(pressPos)
-                    }
-                    this.selected = false;
-                    return true;
-                }
-                if (this.posAddColumn(pressPos)) {
-                    for (let index = 0; index < this.cellContent.length; index++) {
-                        const row = this.cellContent[index];
-                        row.push('');
-                        // row.length++;
-                    }
-                    this.colNum++;
-                    return true;
-                }
-                if (this.posAddRow(pressPos)) {
-                    let newRow = new Array<string>();
-                    newRow.length = this.colNum;
-                    newRow.fill('');
-                    this.cellContent.push(newRow);
-                    this.rowNum++;
-                    return true;
-                }
-
-
-
-
-                // if (this.addtionArea.posHovering(mousePos)) {
-                //     this.addtionArea.click(mousePos);
-                //     return true;
-                // }
-                // for (let i = 0; i < this.rowNum; i++) {
-                //     for (let j = 0; j < this.colNum; j++) {
-                //         if (this.pointersByCell[i][j].some((pointer: LBTable.Array2DPointer, index: number) => {
-                //             if (pointer.posHovering(mousePos)) {
-                //                 pointer.click(mousePos);
-                //                 return true;
-                //             }
-                //         }))
-                //             return true;
-
-                //     }
-                // }
-
-                return this.selectCell(pressPos);
-            }, 150)
+        if (super.mousePress(pressPos)) return true;
+        //选择列
+        if (this.posSelectColumn(pressPos) !== null) {
+            this.innerSelected = {
+                kind: 'column',
+                colIndex: this.posSelectColumn(pressPos)
+            }
+            this.selected = false;
+            return true;
         }
-        return true;
+        //选择行
+        if (this.posSelectRow(pressPos) !== null) {
+            this.innerSelected = {
+                kind: 'row',
+                rowIndex: this.posSelectRow(pressPos)
+            }
+            this.selected = false;
+            return true;
+        }
+        if (this.posAddColumn(pressPos)) {
+            for (let index = 0; index < this.cellContent.length; index++) {
+                const row = this.cellContent[index];
+                row.push('');
+                // row.length++;
+            }
+            this.colNum++;
+            return true;
+        }
+        if (this.posAddRow(pressPos)) {
+            let newRow = new Array<string>();
+            newRow.length = this.colNum;
+            newRow.fill('');
+            this.cellContent.push(newRow);
+            this.rowNum++;
+            return true;
+        }
 
+
+
+
+        // if (this.addtionArea.posHovering(mousePos)) {
+        //     this.addtionArea.click(mousePos);
+        //     return true;
+        // }
+        // for (let i = 0; i < this.rowNum; i++) {
+        //     for (let j = 0; j < this.colNum; j++) {
+        //         if (this.pointersByCell[i][j].some((pointer: LBTable.Array2DPointer, index: number) => {
+        //             if (pointer.posHovering(mousePos)) {
+        //                 pointer.click(mousePos);
+        //                 return true;
+        //             }
+        //         }))
+        //             return true;
+
+        //     }
+        // }
+
+        return this.selectCell(pressPos);
+        return true;
 
     }
     doubleClick(mousePos: Vector) {
@@ -1480,7 +1542,7 @@ export class LBTable extends BoardDataElement {
             case 9://arrow left
                 return this.moveSelected('tab')
             case 8://backspace
-                if (this.innerSelected.kind == 'column') {
+                if (this.innerSelected && this.innerSelected.kind == 'column') {
                     this.colNum--;
                     for (let index = 0; index < this.cellContent.length; index++) {
                         const row = this.cellContent[index];
@@ -1488,7 +1550,7 @@ export class LBTable extends BoardDataElement {
                         // row.length--; 
                     }
                 }
-                if (this.innerSelected.kind == 'row') {
+                if (this.innerSelected && this.innerSelected.kind == 'row') {
                     this.cellContent.splice(this.innerSelected.rowIndex, 1)
                     this.rowNum--;
                 }
@@ -1775,11 +1837,14 @@ export class Path extends BoardScribbleElement {
         this.pInst.noFill()
         this.pInst.stroke(this.strokecolor);
         this.pInst.strokeWeight(this.strokeweight);
-        for (let i = 1; i < this.stamps.length; i++) {
-            const stamp = this.stamps[i];
-            const lastStamp = this.stamps[i - 1];
-            this.pInst.line(lastStamp.x, lastStamp.y, stamp.x, stamp.y);
+        this.pInst.beginShape();
+        for (let i = 0; i < this.stamps.length; i++) {
+            // const stamp = this.stamps[i];
+            // const lastStamp = this.stamps[i - 1];
+            // this.pInst.line(lastStamp.x, lastStamp.y, stamp.x, stamp.y);
+            this.pInst.curveVertex(this.stamps[i].x, this.stamps[i].y);
         }
+        this.pInst.endShape();
         this.pInst.pop();
     }
     //如果正在画
@@ -1825,7 +1890,7 @@ export class Ellipse extends BoardScribbleElement {
 }
 
 export class Arrow extends BoardScribbleElement {
-    static topTriangleSideLength = 20;
+    static topTriangleSideLength = 6;
     trapezoidBottomMidpoint: Vector;//梯形底部中点
     thePoint: Vector;//箭头顶点
     trapezoidBottomWidth: number;
@@ -1847,16 +1912,16 @@ export class Arrow extends BoardScribbleElement {
             this.thePoint.set(this.pInst.mouseX, this.pInst.mouseY)
         }
         let vAxis = p5.Vector.sub(this.thePoint, this.trapezoidBottomMidpoint);
-        let vector1 = vAxis.copy().rotate(90).setMag(1.5);
-        let vector2 = vAxis.copy().rotate(90).setMag(6);
-        let vector3 = vAxis.copy().rotate(90).setMag(15);
+        let vector1 = vAxis.copy().rotate(90).setMag(0.4);
+        let vector2 = vAxis.copy().rotate(90).setMag(1.5);
+        let vector3 = vAxis.copy().rotate(90).setMag(4);
 
         let v1 = this.trapezoidBottomMidpoint.copy().add(vector1);
-        let v2 = this.trapezoidBottomMidpoint.copy().add(vAxis.copy().sub(vAxis.copy().setMag(19))).add(vector2);
-        let v3 = this.trapezoidBottomMidpoint.copy().add(vAxis.copy().sub(vAxis.copy().setMag(21))).add(vector3);
+        let v2 = this.trapezoidBottomMidpoint.copy().add(vAxis.copy().sub(vAxis.copy().setMag(5))).add(vector2);
+        let v3 = this.trapezoidBottomMidpoint.copy().add(vAxis.copy().sub(vAxis.copy().setMag(6))).add(vector3);
         let v4 = this.thePoint;
-        let v5 = this.trapezoidBottomMidpoint.copy().add(vAxis.copy().sub(vAxis.copy().setMag(21))).add(vector3.rotate(180));
-        let v6 = this.trapezoidBottomMidpoint.copy().add(vAxis.copy().sub(vAxis.copy().setMag(19))).add(vector2.rotate(180));
+        let v5 = this.trapezoidBottomMidpoint.copy().add(vAxis.copy().sub(vAxis.copy().setMag(6))).add(vector3.rotate(180));
+        let v6 = this.trapezoidBottomMidpoint.copy().add(vAxis.copy().sub(vAxis.copy().setMag(5))).add(vector2.rotate(180));
         let v7 = this.trapezoidBottomMidpoint.copy().add(vector1.rotate(180));
 
         this.pInst.push();
