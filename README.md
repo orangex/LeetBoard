@@ -1,37 +1,35 @@
-## Welcome to GitHub Pages
+## 目的/意义
 
-You can use the [editor on GitHub](https://github.com/orangex/LeetBoard/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+希望这个小玩意儿可以让你在学习算法数据结构、思考题目时帮助自己更直观的理解问题，更高效的理清头绪。
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+当然你甚至可以通过截图、视频把使用它来思考和解决问题的过程分享出来。
 
-### Markdown
+## 简单展示
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+- 快速添加元素
 
-```markdown
-Syntax highlighted code block
+  ![img](https://github.com/orangex/LeetBoard/blob/master/insert.gif)
 
-# Header 1
-## Header 2
-### Header 3
+- 将格式化的数组、树可视化
 
-- Bulleted
-- List
+  ![img](https://github.com/orangex/LeetBoard/blob/master/paste.gif)
 
-1. Numbered
-2. List
+- 元素提供简单的交互
 
-**Bold** and _Italic_ and `Code` text
+  ![img](https://github.com/orangex/LeetBoard/blob/master/edit.gif)
 
-[Link](url) and ![Image](src)
-```
+- 一个可以呼出的涂画层
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+  ![img](https://github.com/orangex/LeetBoard/blob/master/scribble.gif)
 
-### Jekyll Themes
+  
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/orangex/LeetBoard/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+## 待办
 
-### Support or Contact
+- [ ] 画笔可选颜色调整
+- [ ] 一键截图并复制到剪贴板
+- [ ] 等你提议
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+## 其他
+
+其实我也是一边刷题一边发现需求的，目前产品以嵌入 LeetCode 页面的形式存在。如果有什么建议、想说的，可以提 issue 或者邮件 rampaging9@gmail.com 
