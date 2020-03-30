@@ -11,19 +11,19 @@ Chrome 不再允许拖动 .crx 直接安装拓展，点击[这里](https://chrom
 
 - 快速添加元素
 
-  ![img](/insert.gif)
+  ![](https://tva1.sinaimg.cn/large/00831rSTgy1gdc5rq77kpg31kf0u07wo.gif)
 
 - 将格式化的数组、树可视化
 
-  ![img](/paste.gif)
+  ![](https://tva1.sinaimg.cn/large/00831rSTgy1gdc5s9v2u0g31km0u0kjn.gif)
 
 - 元素提供简单的交互
 
-  ![img](/edit.gif)
+  ![img](https://tva1.sinaimg.cn/large/00831rSTgy1gdc5q711q2g31kl0u0e87.gif)
 
 - 一个可以呼出的涂画层
 
-  ![img](/scribble.gif)
+  ![](https://tva1.sinaimg.cn/large/00831rSTgy1gdc5wfmxwsg31kl0u0b2d.gif)
 
   
 
@@ -40,4 +40,3 @@ Chrome 不再允许拖动 .crx 直接安装拓展，点击[这里](https://chrom
 ## 其他
 
 其实我也是一边刷题一边发现需求的，目前产品以嵌入 LeetCode 页面的形式存在。如果有什么建议、想说的，可以提 issue 或者邮件 rampaging9@gmail.com 
-
