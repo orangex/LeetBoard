@@ -11,19 +11,19 @@ Chrome 不再允许拖动 .crx 直接安装拓展，点击[这里](https://chrom
 
 - 快速添加元素
 
-  ![](https://tva1.sinaimg.cn/large/00831rSTgy1gdc5rq77kpg31kf0u07wo.gif)
+  ![](https://s1.ax1x.com/2020/03/31/GKQ7gx.gif)
 
 - 将格式化的数组、树可视化
 
-  ![](https://tva1.sinaimg.cn/large/00831rSTgy1gdc5s9v2u0g31km0u0kjn.gif)
+  ![](https://s1.ax1x.com/2020/03/31/GKQLDO.gif)
 
 - 元素提供简单的交互
 
-  ![img](https://tva1.sinaimg.cn/large/00831rSTgy1gdc5q711q2g31kl0u0e87.gif)
+  ![](https://s1.ax1x.com/2020/03/31/GKQjVe.gif)
 
 - 一个可以呼出的涂画层
 
-  ![](https://tva1.sinaimg.cn/large/00831rSTgy1gdc5wfmxwsg31kl0u0b2d.gif)
+  ![](https://s1.ax1x.com/2020/03/31/GKQx5d.gif)
 
   
 
