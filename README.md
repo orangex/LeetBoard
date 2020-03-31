@@ -1,5 +1,7 @@
-## 下载安装
+## 安装使用
 Chrome 不再允许拖动 .crx 直接安装拓展，点击[这里](https://chrome.google.com/webstore/detail/leetboard/epgkhlehioniabckannelkbnpdjgjfan)前往 Chrome 应用商店安装(需科学上网)
+
+打开 [leetcode-cn.com](https://leetcode-cn.com/problemset/all/) ,随意进入任意题目即可。
 
 ## 目的/意义
 
