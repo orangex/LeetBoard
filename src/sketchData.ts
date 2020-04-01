@@ -1,7 +1,7 @@
 import { MDCRipple } from '@material/ripple';
 import { MDCDialog } from '@material/dialog';
 import p5 = require('p5');
-import { BoardDataElement, LBLink, LBNode, LBTable, ConnnectedGraph, LBMap } from './elements';
+import { BoardDataElement, LBLink, LBNode, LBTable, ConnnectedGraph, LBMap, LBText } from './elements';
 import { Vector } from 'p5';
 
 import { dataSketchContainer, boardToolbar, modeScribbling, buttonSwitchScribbleMode, switchScribbleMode, dataBoardContainer } from './crx_index';
@@ -55,8 +55,8 @@ const sketchData = (pInst: p5) => {
         sArr.forEach((s: string) => {
           let currArr = s.split(',').map((str: string) => {
             if (str.startsWith('\"') && str.endsWith('\"'))
-              return str.substr(1, str.length - 2);
-            return str;
+              return str.substr(1, str.length - 2).trim();
+            return str.trim();
           })
           table.push(currArr);
         })
@@ -67,8 +67,8 @@ const sketchData = (pInst: p5) => {
       else {
         sArr = t.split(',').map((str: string) => {
           if (str.startsWith('\"') && str.endsWith('\"'))
-            return str.substr(1, str.length - 2);
-          return str;
+            return str.substr(1, str.length - 2).trim();
+          return str.trim();
         })
         dialogInsertasArrayorLinkedList.listen('MDCDialog:closed', (evt: any) => {
           switch (evt.detail.action) {
@@ -81,6 +81,11 @@ const sketchData = (pInst: p5) => {
             case 'linkedlist':
               inserting = (pos: Vector) => {
                 insertLinkedListWithArray(pos, sArr)
+              }
+              break;
+            case 'binarytree':
+              inserting = (pos: Vector) => {
+                insertBinarytreeWithArray(pos, sArr)
               }
               break;
             case 'close':
@@ -124,6 +129,13 @@ const sketchData = (pInst: p5) => {
             </svg>
             <span class="mdc-button__label">链表</span>
           </button>
+
+          <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="binarytree">
+            <svg class="mdc-button__icon" aria-hidden="true">
+              <use href="#iconchuizhishu"></use>
+            </svg>
+          <span class="mdc-button__label">二叉树</span>
+        </button>
         </footer>
       </div>
     </div>
@@ -149,6 +161,9 @@ const sketchData = (pInst: p5) => {
     //click 事件发生在 press 和 Release 之后，有很多不便之处，所以我们用 press 事件代替
     // mainSketchHolder.mouseClicked(sketch_mouseClicked);
 
+    pInst.mouseReleased = () => {
+      mouseReleaseDefault(mousePos.copy())
+    }
     canvas.doubleClicked(() => {
       return false;
     });
@@ -175,9 +190,7 @@ const sketchData = (pInst: p5) => {
     //正在插入的元素类型
   }
 
-  pInst.mouseReleased = function(){
-    mouseReleaseDefault(mousePos.copy())
-  }
+
 
   pInst.doubleClicked = () => {
 
@@ -185,11 +198,12 @@ const sketchData = (pInst: p5) => {
 
   pInst.keyTyped = () => {
     if (modeScribbling) return
-    if (document.activeElement !== dataBoardContainer.elt) return;
+    if(document.activeElement!==dataBoardContainer.elt && !(dataBoardContainer.elt as HTMLElement).contains(document.activeElement) && !document.activeElement.contains((dataBoardContainer.elt as HTMLElement))) return;
     elements.some((ele) => {
       return ele.keyTyped()
     })
   }
+  
   pInst.draw = function () {
     mousePos.set(pInst.mouseX, pInst.mouseY);
     pInst.cursor(pInst.ARROW);
@@ -319,7 +333,7 @@ const sketchData = (pInst: p5) => {
       //按下 shift键
       pInst.keyIsDown(16)) {
 
-      let linkCreating = new LBLink(exports, mousePos.copy(), mousePos.copy(), true)
+      let linkCreating = new LBLink(exports, mousePos.copy(), mousePos.copy(), 'toEnd')
       linkCreating.onScribbling = "end";
       // links.add(linkCreating);
       elements.push(linkCreating)
@@ -515,10 +529,109 @@ function deleteSelected() {
   elements = elements.filter((ele) => {
     return (ele.selected == false)
   })
+  elementsToDelete.forEach((ele)=>{
+    ele.onDelete();
+  })
   recoverStack.push(() => {
     elements = elements.concat(elementsToDelete);
+    elementsToDelete.forEach((ele)=>{
+      ele.onRecover();
+    })
   })
 }
+
+interface buildItem {
+  node: LBNode;
+  left: number;
+  right: number;
+  y: number;
+}
+function insertBinarytreeWithArray(pos: Vector, contents: Array<string>) {
+  if(contents==null||contents.length==0) return;
+  let lastFloor: Array<buildItem> = new Array<buildItem>();
+  let currFloor: Array<buildItem> ;
+
+  let width = (contents.length / 2) * 70;
+
+  let index=0;
+  lastFloor.push({
+    node:insertNode(pos.copy(),contents[0]),
+    left:pos.x-width/2,
+    right:pos.x+width/2,
+    y:pos.y,
+  });
+
+  while (true) {
+    currFloor= new Array<buildItem>();
+    for (let i = 0; i < lastFloor.length; i++) {
+      index++;
+      if (index >= contents.length) return;
+      let fatherItem = lastFloor[i];
+      let fatherx = fatherItem.node.datumPoint.x;
+      let fathery = fatherItem.node.datumPoint.y;
+
+      if (contents[index] != 'null') {
+        let midx = (fatherx + fatherItem.left) / 2;
+        let currNode = insertNode(pInst.createVector(midx, fathery + 70), contents[index])
+        currFloor.push({
+          node: currNode,
+          left: fatherItem.left,
+          right: fatherx,
+          y: fathery + 80,
+        })
+        union(fatherItem.node, currNode);
+        let link = new LBLink(exports, fatherItem.node, currNode, 'toEnd')
+        elements.push(link)
+      }
+
+      index++;
+      if (index >= contents.length) return;
+      if (contents[index] != 'null') {
+        let midx = (fatherx + fatherItem.right) / 2;
+        let currNode = insertNode(pInst.createVector(midx, fathery + 70), contents[index])
+        currFloor.push({
+          node: currNode,
+          left: fatherx,
+          right: fatherItem.right,
+          y: fathery + 80,
+        })
+        union(fatherItem.node, currNode);
+        let link = new LBLink(exports, fatherItem.node, currNode, 'toEnd')
+        elements.push(link)
+      }
+
+    }
+    lastFloor=currFloor;
+  }
+}
+
+// function build(depth: number, index: number, contents: Array<string>, left: number, right: number, y: number): LBNode {
+  
+
+// }
+// function build(index: number, contents: Array<string>, left: number, right: number, y: number): LBNode {
+//   if (index >= contents.length) return null;
+//   let content = contents[index];
+//   if (content == 'null') return null;
+//   indexInCurrFloor
+
+
+//   let midx = (left + right) / 2;
+//   let currNode = insertNode(pInst.createVector(midx, y), content);
+//   let leftChild = build(index * 2 + 1, contents, left, midx, y + 80);
+//   let rightChild = build(index * 2 + 2, contents, midx, right, y + 80);
+//   if (leftChild !== null) {
+//     union(currNode, leftChild)
+//     let link = new LBLink(exports, currNode, leftChild, 'toEnd')
+//     elements.push(link)
+//   }
+//   if (rightChild !== null) {
+//     union(currNode, rightChild)
+//     let link = new LBLink(exports, currNode, rightChild, 'toEnd')
+//     elements.push(link)
+//   }
+//   return currNode;
+// }
 function insertLinkedListWithArray(pos: Vector, content: Array<string>) {
   content.push('null')
   let posCurr = pos.copy()
@@ -528,7 +641,7 @@ function insertLinkedListWithArray(pos: Vector, content: Array<string>) {
     posCurr.add(offset);
     let currNode = insertNode(posCurr, content[index]);
     union(lastNode, currNode)
-    let link = new LBLink(exports, lastNode, currNode, true)
+    let link = new LBLink(exports, lastNode, currNode, 'toEnd')
     // links.add(link);
     elements.push(link)
     lastNode = currNode;
@@ -559,12 +672,12 @@ function insertBinarytreeRandom(limitL: number, limitR: number, y: number, num: 
   let left = insertBinarytreeRandom(limitL, pos.x, pos.y + 70, lnum);
   let right = insertBinarytreeRandom(pos.x, limitR, y + 70, rnum);
   if (left) {
-    elements.push(new LBLink(exports, node, left, true));
+    elements.push(new LBLink(exports, node, left, 'toEnd'));
     union(node, left)
     // createLink(node, left, left);
   }
   if (right) {
-    elements.push(new LBLink(exports, node, right, true));
+    elements.push(new LBLink(exports, node, right, 'toEnd'));
     union(node, right)
   }
   return node;
@@ -647,12 +760,18 @@ function insertNode(pos: Vector, title?: string) {
   graphs.add(graph);
   return node;
 }
-function insertMapAtPos(pos: Vector) {
-  insertMap
-}
+
 function insertMap(pos: Vector) {
   let map = new LBMap(exports, pos)
   elements.push(map);
+}
+function insertText(pos:Vector){
+
+  window.setTimeout(()=>{
+    let text=new LBText(exports,pos)
+    elements.push(text);
+  },50)
+
 }
 
 let constant_charge = 400;
@@ -758,6 +877,10 @@ export let onToolbarClicked = function (ev: MouseEvent) {
       else inserting = insertMap
       //如果正在 insert 与点选的 type 一致，则取消
       break
+    case 'insertText':
+      if (inserting == insertText) inserting = null
+      else inserting = insertText
+      break;
     default:
       break;
   }

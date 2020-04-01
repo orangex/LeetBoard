@@ -7,7 +7,9 @@ const config= {
     entry: {
          css:'./src/index.scss',
         //  web_bundle:'./src/index.ts',
-         crx_bundle:'./src/crx_index.ts'
+         crx_bundle:'./src/crx_index.ts',
+         crx_background:'./src/crx_background.ts',
+         crx_contentscriptlauncher:'./src/content-script-launcher.ts'
     },
 
     output: {

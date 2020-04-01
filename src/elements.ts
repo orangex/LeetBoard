@@ -3,6 +3,8 @@ import { Vector } from "p5";
 import { accent_color, md500_red, md500_green, md500_amber } from "./global";
 import * as BoardData from "./sketchData"
 import * as BoardScribble from "./sketchScribble"
+import { inRect, isNumber } from "./helper";
+import { dataSketchContainer } from "./crx_index";
 
 const imaginary_color = 'rgba(f,f,f,0.25)';
 const selected_color = '#008000'
@@ -103,6 +105,12 @@ export abstract class BoardDataElement extends ResponsiveElement {
     }
     addForce(force: Vector) {
         this.acceleration.add(force);
+    }
+    onDelete(){
+
+    }
+    onRecover(){
+
     }
 
     mouseWithin: boolean
@@ -265,7 +273,27 @@ export class LBNode extends BoardDataElement {
     posEditable(mousePos: Vector) {
         return this.posWithin(mousePos)
     }
+    posAdjustNumber(mousePos: Vector) {
+        let leftAreaLeftTopX = this.datumPoint.x - this.radius * 3 / 4 - 4;
+        let leftAreaLeftTopY = this.datumPoint.y - this.radius / 2;
 
+        let leftAreaRightBottomX = this.datumPoint.x - this.radius / 2;
+        let leftAreaRightBottomY = this.datumPoint.y + this.radius / 2;
+
+        if (inRect(mousePos, this.pInst.createVector(leftAreaLeftTopX, leftAreaLeftTopY), this.pInst.createVector(leftAreaRightBottomX, leftAreaRightBottomY)))
+            return -1;
+
+        let rightAreaLeftTopX = this.datumPoint.x + this.radius / 2;
+        let rightAreaLeftTopY = this.datumPoint.y - this.radius / 2;
+
+        let rightAreaRightBottomX = this.datumPoint.x + this.radius * 3 / 4 + 4;
+        let rightAreaRightBottomY = this.datumPoint.y + this.radius / 2;
+
+
+        if (inRect(mousePos, this.pInst.createVector(rightAreaLeftTopX, rightAreaLeftTopY), this.pInst.createVector(rightAreaRightBottomX, rightAreaRightBottomY)))
+            return 1;
+        return null;
+    }
     // longPressed(pressPos: Vector): boolean {
     //     console.log('node longpressed')
     //     if (!this.posWithin(pressPos)) return false
@@ -283,8 +311,6 @@ export class LBNode extends BoardDataElement {
 
         console.log('node pressed')
 
-
-
         // if (this.pressTime == 1) {
         //     clearTimeout(this.pressTimeoutID)
         //     if (this.posEditable(pressPos)) {
@@ -296,19 +322,29 @@ export class LBNode extends BoardDataElement {
         //     this.pressTimeoutID = window.setTimeout(() => {
         //         this.pressTime = 0;
 
-                
+
         //     }, 150)
         // }
 
 
         //16 = shift
         if (this.pInst.keyIsDown(16)) {
-            let linkCreating = new LBLink(this.board, this, this.board.mousePos, true)
+            let linkCreating = new LBLink(this.board, this, this.board.mousePos, 'toEnd')
             linkCreating.onScribbling = "end";
             // this.board.links.add(linkCreating);
             this.board.elements.push(linkCreating)
             return true;
-        } 
+        }
+
+
+        if (Number(this.titleContent) !== NaN && !this.dragging) {
+            let adjust = this.posAdjustNumber(pressPos);
+
+            if (adjust) {
+                this.titleContent = Number(this.titleContent) + adjust;
+                return true;
+            }
+        }
         if (super.mousePress(pressPos)) return true;
         return true
     }
@@ -385,13 +421,18 @@ export class LBNode extends BoardDataElement {
     }
     draw() {
         super.draw();
+
+        let num = Number(this.titleContent);
+
         if (this.dragging) {
             this.datumPoint = p5.Vector.add(this.board.mousePos, this.dragging);
         }
-
-        if (this.posDraggable(this.board.mousePos)) {
-            this.pInst.cursor(this.pInst.MOVE);
-        }
+        if (!this.dragging && num !== NaN && this.posAdjustNumber(this.board.mousePos)) {
+            this.pInst.cursor(this.pInst.HAND);
+        } else
+            if (this.posDraggable(this.board.mousePos)) {
+                this.pInst.cursor(this.pInst.MOVE);
+            }
         // this.selected = this.board.elementsSelected.has(this)
         if (this.selected) {
             this.pInst.push();
@@ -415,6 +456,18 @@ export class LBNode extends BoardDataElement {
         this.pInst.textFont('Roboto');
         this.pInst.text(this.titleContent, this.getCenter().x, this.getCenter().y)
         this.pInst.pop();
+
+
+        if (!this.dragging && num !== NaN && this.mouseWithin) {
+            this.pInst.push()
+            this.pInst.stroke('#237893')
+            this.pInst.line(this.datumPoint.x - this.radius / 2, this.datumPoint.y - this.radius / 2, this.datumPoint.x - this.radius * 3 / 4, this.datumPoint.y);
+            this.pInst.line(this.datumPoint.x - this.radius / 2, this.datumPoint.y + this.radius / 2, this.datumPoint.x - this.radius * 3 / 4, this.datumPoint.y);
+
+            this.pInst.line(this.datumPoint.x + this.radius / 2, this.datumPoint.y - this.radius / 2, this.datumPoint.x + this.radius * 3 / 4, this.datumPoint.y);
+            this.pInst.line(this.datumPoint.x + this.radius / 2, this.datumPoint.y + this.radius / 2, this.datumPoint.x + this.radius * 3 / 4, this.datumPoint.y);
+            this.pInst.pop();
+        }
 
     }
 }
@@ -478,7 +531,7 @@ export class LBLink extends BoardDataElement {
     }
     // direction:boolean  //正 反 无
     // TODO  directionTo 可能要一直改变
-    constructor(board: any, public start: Vector | LBNode, public end: Vector | LBNode, public direction?: boolean) {
+    constructor(board: any, public start: Vector | LBNode, public end: Vector | LBNode, public direction?: 'toEnd' | 'toStart' | 'both' | 'none') {
         super(board, start instanceof Vector ? start : start.datumPoint);
         this.title = '';
     }
@@ -541,12 +594,14 @@ export class LBLink extends BoardDataElement {
     // }
 
     nextDirection() {
-        if (this.direction == true)
-            this.direction = false
-        else if (this.direction == false)
-            this.direction = null;
-        else if (this.direction == null)
-            this.direction = true
+        if (this.direction == 'toEnd')
+            this.direction = 'toStart'
+        else if (this.direction == 'toStart')
+            this.direction = 'both';
+        else if (this.direction == 'both')
+            this.direction = 'none'
+        else if (this.direction == 'none')
+            this.direction = 'toEnd'
     }
     // get directionTo(){
 
@@ -584,11 +639,14 @@ export class LBLink extends BoardDataElement {
         this.pInst.fill('black');
 
         //shape.draw();
-        if (this.direction == true)
+        if (this.direction == 'toEnd')
             this.board.drawArrow(this.startV, p5.Vector.sub(this.endV, this.startV));
-        else if (this.direction == false)
+        else if (this.direction == 'toStart')
             this.board.drawArrow(this.endV, p5.Vector.sub(this.startV, this.endV));
-        else
+        else if (this.direction == 'both') {
+            this.board.drawArrow(this.startV, p5.Vector.sub(this.endV, this.startV));
+            this.board.drawArrow(this.endV, p5.Vector.sub(this.startV, this.endV));
+        } else
             this.pInst.line(this.startV.x, this.startV.y, this.endV.x, this.endV.y);
         this.pInst.pop();
         if (this.mouseWithin && !this.onScribbling) {
@@ -622,6 +680,33 @@ interface Selected_Cell {
     colIndex: number
 }
 export class LBMap extends BoardDataElement {
+    posAdjustNum(mousePos:Vector):number{
+        let rIndex = Math.floor((BoardData.mousePos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((BoardData.mousePos.x - this.leftTop.x) / this.cellWidth);
+
+        if(rIndex!==1 || cIndex<0 && cIndex>=this.colNum || this.dragging||!isNumber(this.values[cIndex]))  return null;
+
+        let leftAreaLeftTopX = this.leftTopOfCell(1, cIndex).x + this.cellWidth / 2 - this.cellWidth * 3 / 8 - 4;
+        let leftAreaLeftTopY = this.leftTopOfCell(1, cIndex).y + this.cellHeight / 2 - this.cellHeight / 4;
+
+        let leftAreaRightBottomX = this.leftTopOfCell(1, cIndex).x + this.cellWidth / 2 - this.cellWidth / 4;
+        let leftAreaRightBottomY = this.leftTopOfCell(1, cIndex).y + this.cellHeight / 2 + this.cellHeight / 4;
+
+        if (inRect(mousePos, this.pInst.createVector(leftAreaLeftTopX, leftAreaLeftTopY), this.pInst.createVector(leftAreaRightBottomX, leftAreaRightBottomY))) {
+            return -1;
+        }
+
+        let rightAreaLeftTopX = this.leftTopOfCell(1, cIndex).x + this.cellWidth / 2 + this.cellWidth / 4;
+        let rightAreaLeftTopY = this.leftTopOfCell(1, cIndex).y + this.cellHeight / 2 - this.cellHeight / 4;
+
+        let rightAreaRightBottomX = this.leftTopOfCell(1, cIndex).x + this.cellWidth / 2 + this.cellWidth * 3 / 8 + 4;
+        let rightAreaRightBottomY = this.leftTopOfCell(1, cIndex).y + this.cellHeight / 2 + this.cellHeight / 4;
+
+        if (inRect(mousePos, this.pInst.createVector(rightAreaLeftTopX, rightAreaLeftTopY), this.pInst.createVector(rightAreaRightBottomX, rightAreaRightBottomY))) {
+            return 1;
+        }
+        return null;
+    }
     posSelectable(pos: p5.Vector): boolean {
         return false;
     }
@@ -642,8 +727,8 @@ export class LBMap extends BoardDataElement {
     // innerSelected: Array2D.Array2DPointer | { rowIndex: number; colIndex: number }
 
     //行号列号是绘制的结果，数据以 content[0][0]为左上定点。
-    cellWidth = 30;
-    cellHeight = 30;
+    cellWidth = 45;
+    cellHeight = 45;
     title: string | number;
     // cellContentInput: Array<Array<p5.Element>>;
     graphBelong: ConnnectedGraph;
@@ -705,7 +790,7 @@ export class LBMap extends BoardDataElement {
         // this.selected = this.board.elementsSelected.has(this);
         if (this.mouseWithin && !this.dragging) {
             this.pInst.push();
-            this.pInst.stroke('rgba(0,0,0,0.5)');
+            this.pInst.stroke('#237893')
             // this.pInst.strokeWeight(1)
             this.pInst.line(this.leftTop.x + this.width, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y)
             this.pInst.line(this.leftTop.x + this.width + this.cellWidth, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
@@ -725,6 +810,8 @@ export class LBMap extends BoardDataElement {
         if (this.posDraggable(BoardData.mousePos)) {
             this.pInst.cursor(this.pInst.MOVE)
         }
+        if(this.posAdjustNum(BoardData.mousePos))  
+            this.pInst.cursor(this.pInst.HAND)
 
 
         // this.pInst.line(this.leftTop.x+this.width+this.cellWidth,this.leftTop.y,this.leftTop.x+this.width+this.cellWidth,this.leftTop.y+this.height)
@@ -773,6 +860,25 @@ export class LBMap extends BoardDataElement {
             this.pInst.text(this.keys[i], tl.x, tl.y, this.cellWidth, this.cellHeight)
             tl = this.leftTopOfCell(1, i);
             this.pInst.text(this.values[i], tl.x, tl.y, this.cellWidth, this.cellHeight)
+
+        }
+
+        if(!this.dragging&&rIndex==1 && cIndex>=0 && cIndex<this.colNum && isNumber(this.values[cIndex])){
+            this.pInst.push()
+            this.pInst.stroke('#237893')
+
+            if (isNumber(this.values[cIndex])) {
+                let cellCenterX = this.leftTopOfCell(rIndex, cIndex).x + this.cellWidth / 2;
+                let cellCenterY = this.leftTopOfCell(rIndex, cIndex).y + this.cellHeight / 2;
+                this.pInst.line(cellCenterX - this.cellWidth / 4, cellCenterY - this.cellHeight / 4, cellCenterX - this.cellWidth * 3 / 8, cellCenterY);
+                this.pInst.line(cellCenterX - this.cellWidth / 4, cellCenterY + this.cellHeight / 4, cellCenterX - this.cellWidth * 3 / 8, cellCenterY);
+
+                this.pInst.line(cellCenterX + this.cellWidth / 4, cellCenterY - this.cellHeight / 4, cellCenterX + this.cellWidth * 3 / 8, cellCenterY);
+                this.pInst.line(cellCenterX + this.cellWidth / 4, cellCenterY + this.cellHeight / 4, cellCenterX + this.cellWidth * 3 / 8, cellCenterY);
+
+            }
+
+            this.pInst.pop();
 
         }
         this.pInst.textAlign(this.pInst.RIGHT, this.pInst.CENTER);
@@ -853,11 +959,18 @@ export class LBMap extends BoardDataElement {
 
     }
     //判定选中 return 该 pos上是否成功选中
-    selectCell(mousePos: Vector) {
+    pressAtCell(mousePos: Vector) {
         let rIndex = Math.floor((mousePos.y - this.leftTop.y) / this.cellHeight);
         let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
         if (rIndex < 0 || rIndex >= 2 || cIndex < 0 || cIndex >= this.colNum) return false;
-
+        
+        if (rIndex==1&& isNumber(this.values[cIndex])) {
+            let adjust=this.posAdjustNum(mousePos)
+            if(adjust!==null){
+                this.values[cIndex] = (Number(this.values[cIndex]) +adjust).toString();
+                return true;
+            }
+        }
         this.board.elements.forEach((ele) => {
             ele.cancelSelect();
         })
@@ -972,7 +1085,7 @@ export class LBMap extends BoardDataElement {
         }
         if (this.posDraggable(pressPos)) return true;
 
-        return this.selectCell(pressPos);
+        return this.pressAtCell(pressPos);
         return true;
 
     }
@@ -1019,6 +1132,121 @@ export class LBMap extends BoardDataElement {
         }
 
     }
+
+}
+
+export class LBText extends BoardDataElement{
+    textArea:p5.Element;
+    fontSize:number;
+    paddingHoriz=12;
+    paddingVertic=9;
+    get width():number{
+        return (this.textArea.size() as any).width+2*this.paddingHoriz;
+    }    
+    get height():number{
+        return (this.textArea.size() as any).height+2*this.paddingVertic;
+    }
+
+    posWithin(pos: p5.Vector): boolean {
+        let c=4;
+        return pos.x>=this.datumPoint.x-c && pos.x<=this.datumPoint.x+this.width+c 
+        && pos.y>=this.datumPoint.y-c && pos.y<=this.datumPoint.y+this.height+c ;
+    }    
+    posDraggable(pos: p5.Vector): boolean {
+        // if(this.editing) return false;
+        if(pos.x>=this.datumPoint.x+this.paddingHoriz &&  pos.x<=this.datumPoint.x-this.paddingHoriz+this.width 
+            && pos.y>=this.datumPoint.y+this.paddingVertic && pos.y<=this.datumPoint.y-this.paddingVertic+this.height) return false;
+        return(this.posWithin(pos));
+    }
+    inSelectionBox(leftTop: p5.Vector, rightBottom: p5.Vector): boolean {
+        
+        return leftTop.x<=this.datumPoint.x+this.width/2 && leftTop.y<=this.datumPoint.y+this.height/2 
+        && rightBottom.x>=this.datumPoint.x+this.width/2 && rightBottom.y>=this.datumPoint.y+this.height/2 ;
+    }
+    posSelectable(pos: p5.Vector): boolean {
+        return (!this.selected && this.posWithin(pos))
+    }
+    constructor(board: typeof BoardData, pos: Vector){
+        super(board,pos);
+        this.textArea=this.pInst.createElement('div','');
+        this.textArea.parent(dataSketchContainer)
+        this.textArea.attribute('contenteditable', 'true');
+        this.textArea.attribute('spellcheck', 'false');
+        this.textArea.style('outline', 'none');
+        this.textArea.style('border', 'none');
+        this.textArea.style('background-color', 'transparent');
+        this.textArea.style('min-width', '1px');
+        this.textArea.attribute('tabindex', '-1');
+        this.editing=true;
+        this.selected=true;
+
+        (this.textArea.elt as HTMLInputElement).onfocus = () => {
+            // if(!this.editing) this.textArea.elt.blur()
+            this.selected=true;
+        };
+        this.textArea.elt.focus();
+        let selection=window.getSelection();
+        selection.removeAllRanges(); 
+        let range=document.createRange();
+        // range.setStartBefore((this.textArea.elt as HTMLElement).firstChild)
+        // range.setEndAfter((this.textArea.elt as HTMLElement).firstChild)
+        range.setStart(this.textArea.elt,0);
+        range.setEnd(this.textArea.elt,0);
+        // range.selectNodeContents(this.textArea.elt);
+        selection.addRange(range);
+        (this.textArea.elt as HTMLInputElement).onblur = () => {
+            // this.editing = false;
+            console.log('blur')
+        };
+    }
+
+    cancelSelect(){
+        super.cancelSelect();
+        this.editing=false;
+    }
+    onDelete(){
+        this.textArea.hide();
+    }
+    onRecover(){
+        this.textArea.show();
+    }
+    
+    draw(){
+        super.draw();
+
+        if (this.dragging) {
+            this.datumPoint = p5.Vector.add(this.board.mousePos, this.dragging);
+        }
+        this.textArea.position(this.datumPoint.x+this.paddingHoriz,this.datumPoint.y+this.paddingVertic);
+
+        if(this.posDraggable(BoardData.mousePos)){
+            this.pInst.cursor(this.pInst.MOVE);
+        }
+
+
+        if(this.selected) {
+            this.pInst.push();
+            this.pInst.stroke(selected_color);
+            this.pInst.strokeWeight(2.8);
+            this.pInst.noFill();
+            this.pInst.rect(this.datumPoint.x,this.datumPoint.y,this.width,this.height);
+            this.pInst.pop();
+        }
+
+    }
+    keyTyped(): boolean {
+        // if(this.selected && this.pInst.keyCode==13) {
+        //     this.edit();
+        //     return true;
+        // }
+
+        return false;
+    }
+    edit(){
+        this.editing=true;
+        this.textArea.elt.focus();
+    }
+
 
 }
 export class LBTable extends BoardDataElement {
@@ -1156,11 +1384,12 @@ export class LBTable extends BoardDataElement {
         if (cIndex < 0 || cIndex >= this.colNum || rIndex !== this.rowNum) return false;
         return true
     }
-
     draw() {
         super.draw()
         // this.pInst.randomSeed(this.id);
         // this.selected = this.board.elementsSelected.has(this);
+        let rIndex = Math.floor((BoardData.mousePos.y - this.leftTop.y) / this.cellHeight);
+        let cIndex = Math.floor((BoardData.mousePos.x - this.leftTop.x) / this.cellWidth);
 
         if (this.mouseWithin) {
             // if (this.posAnchor(BoardData.mousePos))
@@ -1176,30 +1405,48 @@ export class LBTable extends BoardDataElement {
                 this.pInst.cursor(this.pInst.HAND)
             } else if (this.posAddColumn(BoardData.mousePos)) {
                 this.pInst.cursor(this.pInst.HAND)
-            }
+            } 
+            if(rIndex>=0 && rIndex<this.rowNum && cIndex>=0 && cIndex<this.colNum && isNumber(this.cellContent[rIndex][cIndex]) && this.posAdjustNum(BoardData.mousePos,rIndex,cIndex))
+                this.pInst.cursor(this.pInst.HAND)
         }
 
 
         if (this.mouseWithin && !this.dragging) {
+
             this.pInst.push();
-            this.pInst.stroke('rgba(0,0,0,0.5)');
+            // this.pInst.stroke(128, 128, 128, 128);
+            this.pInst.stroke('#237893');
+            this.pInst.strokeWeight(1)
+            let tempX;
+            let tempY;
             // this.pInst.strokeWeight(1)
-            this.pInst.line(this.leftTop.x + this.width, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y)
-            this.pInst.line(this.leftTop.x + this.width + this.cellWidth, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
-            this.pInst.line(this.leftTop.x + this.width, this.leftTop.y + this.height, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
-            let tempX = this.leftTop.x + this.width + this.cellWidth / 2
-            let tempY = this.leftTop.y + this.height / 2;
-            this.pInst.line(tempX - this.cellWidth * 0.25, tempY, tempX + this.cellWidth * 0.25, tempY)
-            this.pInst.line(tempX, tempY - this.cellWidth * 0.25, tempX, tempY + this.cellWidth * 0.25)
+            if (this.posAddColumn(BoardData.mousePos)) {
+                this.pInst.line(this.leftTop.x + this.width, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y)
+                this.pInst.line(this.leftTop.x + this.width + this.cellWidth, this.leftTop.y, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
+                this.pInst.line(this.leftTop.x + this.width, this.leftTop.y + this.height, this.leftTop.x + this.width + this.cellWidth, this.leftTop.y + this.height)
+                tempX = this.leftTop.x + this.width + this.cellWidth / 2
+                tempY = this.leftTop.y + this.height / 2;
+                this.pInst.stroke('#237893');
+                this.pInst.line(tempX - this.cellWidth * 0.25, tempY, tempX + this.cellWidth * 0.25, tempY)
+                this.pInst.line(tempX, tempY - this.cellWidth * 0.25, tempX, tempY + this.cellWidth * 0.25)
 
-            this.pInst.line(this.leftTop.x, this.leftTop.y + this.height, this.leftTop.x, this.leftTop.y + this.height + this.cellHeight)
-            this.pInst.line(this.leftTop.x, this.leftTop.y + this.height + this.cellHeight, this.leftTop.x + this.width, this.leftTop.y + this.height + this.cellHeight)
-            this.pInst.line(this.leftTop.x + this.width, this.leftTop.y + this.height, this.leftTop.x + this.width, this.leftTop.y + this.height + this.cellHeight)
-            tempX = this.leftTop.x + this.width / 2
-            tempY = this.leftTop.y + this.height + this.cellHeight / 2;
+            }
+            if (this.posAddRow(BoardData.mousePos)) {
+                // this.pInst.stroke(128, 128, 128, 128);
+                this.pInst.stroke('#237893');
+                this.pInst.line(this.leftTop.x, this.leftTop.y + this.height, this.leftTop.x, this.leftTop.y + this.height + this.cellHeight)
+                this.pInst.line(this.leftTop.x, this.leftTop.y + this.height + this.cellHeight, this.leftTop.x + this.width, this.leftTop.y + this.height + this.cellHeight)
+                this.pInst.line(this.leftTop.x + this.width, this.leftTop.y + this.height, this.leftTop.x + this.width, this.leftTop.y + this.height + this.cellHeight)
 
-            this.pInst.line(tempX - this.cellHeight * 0.25, tempY, tempX + this.cellHeight * 0.25, tempY)
-            this.pInst.line(tempX, tempY - this.cellHeight * 0.25, tempX, tempY + this.cellHeight * 0.25)
+                tempX = this.leftTop.x + this.width / 2
+                tempY = this.leftTop.y + this.height + this.cellHeight / 2;
+
+                this.pInst.stroke('#237893');
+                this.pInst.line(tempX - this.cellHeight * 0.25, tempY, tempX + this.cellHeight * 0.25, tempY)
+                this.pInst.line(tempX, tempY - this.cellHeight * 0.25, tempX, tempY + this.cellHeight * 0.25)
+
+            }
+
             this.pInst.pop();
         }
 
@@ -1266,24 +1513,40 @@ export class LBTable extends BoardDataElement {
                 let tl = this.leftTopOfCell(i, j);
                 // this.pInst.text('The quick brown fox jumped over the lazy dog.', tl.x, tl.y, 50, 60)
                 this.pInst.text(this.cellContent[i][j].toString(), tl.x, tl.y, this.cellWidth, this.cellHeight)
-
-                // let input = this.cellContentInput[i][j];
-                // let x = this.leftTop.x + j * this.cellWidth + this.cellWidth / 2;
-                // let y = this.leftTop.y + i * this.cellHeight + this.cellHeight / 2;
-                // // input.size(myp5.textWidth(input.value()));
-                // let xOffset = Math.floor(Math.min((input.size() as Size).width, this.cellWidth) / 2);
-                // let yOffset = Math.min((input.size() as Size).height, this.cellHeight) / 2;
-                // input.position(x - xOffset, y - yOffset);
+                // if(this.cellContent[i][j])
             }
         this.pInst.pop()
 
+        if (this.mouseWithin && !this.dragging && rIndex >= 0 && rIndex < this.rowNum && cIndex >= 0 && cIndex < this.colNum) {
+
+            this.pInst.push()
+            this.pInst.stroke('#237893')
+
+            if (isNumber(this.cellContent[rIndex][cIndex])) {
+                let cellCenterX = this.leftTopOfCell(rIndex, cIndex).x + this.cellWidth / 2;
+                let cellCenterY = this.leftTopOfCell(rIndex, cIndex).y + this.cellHeight / 2;
+                this.pInst.line(cellCenterX - this.cellWidth / 4, cellCenterY - this.cellHeight / 4, cellCenterX - this.cellWidth * 3 / 8, cellCenterY);
+                this.pInst.line(cellCenterX - this.cellWidth / 4, cellCenterY + this.cellHeight / 4, cellCenterX - this.cellWidth * 3 / 8, cellCenterY);
+
+                this.pInst.line(cellCenterX + this.cellWidth / 4, cellCenterY - this.cellHeight / 4, cellCenterX + this.cellWidth * 3 / 8, cellCenterY);
+                this.pInst.line(cellCenterX + this.cellWidth / 4, cellCenterY + this.cellHeight / 4, cellCenterX + this.cellWidth * 3 / 8, cellCenterY);
+
+            }
+
+
+            this.pInst.pop();
+
+        }
         //行号
         // if (this.mouseWithin && !this.dragging) 
         {
             this.pInst.push()
-            this.pInst.strokeWeight(0.4)
+            this.pInst.strokeWeight(0.6)
             this.pInst.textFont('Roboto');
-            this.pInst.fill(128, 128, 128);
+            // this.pInst.stroke(0,102,153,51);
+            this.pInst.stroke('#237893');
+            this.pInst.fill('#237893');
+            // this.pInst.fill(0, 102, 153, 51);
             this.pInst.textAlign(this.pInst.CENTER, this.pInst.CENTER);
             for (let i = 0; i < this.rowNum; i++) {
                 let x = this.leftTop.x - this.cellWidth / 2;
@@ -1306,7 +1569,9 @@ export class LBTable extends BoardDataElement {
         let titleY = this.leftTop.y + this.height + 18;
         // this.titleInput.position(titleX - Math.floor((this.titleInput.size() as Size).width / 2), titleY - (this.titleInput.size() as Size).height / 2);
     }
+    //暂时仅做触发 edit 用
     keyTyped(): boolean {
+
         if (this.pInst.keyCode == 13) return false;
         if (!this.innerSelected) return false;
         if (this.editing) return false;
@@ -1359,11 +1624,42 @@ export class LBTable extends BoardDataElement {
         super.cancelSelect();
         this.innerSelected = null;
     }
+    posAdjustNum(mousePos:Vector,rIndex:number,cIndex:number):number{
+        let leftAreaLeftTopX = this.leftTopOfCell(rIndex, cIndex).x + this.cellWidth / 2 - this.cellWidth * 3 / 8 - 4;
+        let leftAreaLeftTopY = this.leftTopOfCell(rIndex, cIndex).y + this.cellHeight / 2 - this.cellHeight / 4;
+
+        let leftAreaRightBottomX = this.leftTopOfCell(rIndex, cIndex).x + this.cellWidth / 2 - this.cellWidth / 4;
+        let leftAreaRightBottomY = this.leftTopOfCell(rIndex, cIndex).y + this.cellHeight / 2 + this.cellHeight / 4;
+
+        if (inRect(mousePos, this.pInst.createVector(leftAreaLeftTopX, leftAreaLeftTopY), this.pInst.createVector(leftAreaRightBottomX, leftAreaRightBottomY))) {
+            return -1;
+        }
+
+        let rightAreaLeftTopX = this.leftTopOfCell(rIndex, cIndex).x + this.cellWidth / 2 + this.cellWidth / 4;
+        let rightAreaLeftTopY = this.leftTopOfCell(rIndex, cIndex).y + this.cellHeight / 2 - this.cellHeight / 4;
+
+        let rightAreaRightBottomX = this.leftTopOfCell(rIndex, cIndex).x + this.cellWidth / 2 + this.cellWidth * 3 / 8 + 4;
+        let rightAreaRightBottomY = this.leftTopOfCell(rIndex, cIndex).y + this.cellHeight / 2 + this.cellHeight / 4;
+
+        if (inRect(mousePos, this.pInst.createVector(rightAreaLeftTopX, rightAreaLeftTopY), this.pInst.createVector(rightAreaRightBottomX, rightAreaRightBottomY))) {
+            return 1;
+        }
+        return null;
+    }
     //判定选中 return 该 pos上是否成功选中
-    selectCell(mousePos: Vector) {
+    pressAtCell(mousePos: Vector) {
         let rIndex = Math.floor((mousePos.y - this.leftTop.y) / this.cellHeight);
         let cIndex = Math.floor((mousePos.x - this.leftTop.x) / this.cellWidth);
         if (rIndex < 0 || rIndex >= this.rowNum || cIndex < 0 || cIndex >= this.colNum) return false;
+        if (isNumber(this.cellContent[rIndex][cIndex])) {
+            let adjust=this.posAdjustNum(mousePos,rIndex,cIndex)
+            if(adjust!==null){
+                this.cellContent[rIndex][cIndex] = (Number(this.cellContent[rIndex][cIndex]) +adjust).toString();
+                return true;
+            }
+        }
+
+
         this.board.elements.forEach((ele) => {
             ele.cancelSelect();
         })
@@ -1511,7 +1807,7 @@ export class LBTable extends BoardDataElement {
         //     }
         // }
 
-        return this.selectCell(pressPos);
+        return this.pressAtCell(pressPos);
         return true;
 
     }
@@ -1888,6 +2184,8 @@ export class Ellipse extends BoardScribbleElement {
     }
 
 }
+
+
 
 export class Arrow extends BoardScribbleElement {
     static topTriangleSideLength = 6;

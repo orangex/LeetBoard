@@ -1,3 +1,5 @@
+
+
 import p5 = require("p5")
 import { MDCRipple } from '@material/ripple';
 import { MDCDialog } from '@material/dialog';
@@ -10,22 +12,24 @@ import * as SketchScribble from "./sketchScribble"
 
 const primaryColor = '#089163';
 
+
 const sketchHelper = (pInst: p5) => {
-  pInst.keyPressed=function(){
+  pInst.keyPressed = function () {
     //alt 键
-    if(pInst.keyCode==18){
+    if (pInst.keyCode == 18) {
       switchScribbleMode()
       return;
     }
   }
 }
-let p5Helper = new p5(sketchHelper)
 
+
+let p5Helper = new p5(sketchHelper)
 
 export let dataBoardContainer = p5Helper.createElement('div');
 
 dataBoardContainer.id("databoard-containter");
-dataBoardContainer.attribute('tabindex','-1');
+dataBoardContainer.attribute('tabindex', '-1');
 dataBoardContainer.elt.focus();
 export let boardToolbar = p5Helper.createElement('div')
 
@@ -33,13 +37,13 @@ boardToolbar.id('board-toolbar')
 boardToolbar.mouseClicked((ev) => {
   let target = ev.target;
   let type = (target as Element).getAttribute('data-tooltype');
-  if(type=='info'){
+  if (type == 'info') {
     dialogInfo.open();
-  } else 
-  if (modeScribbling)
-    SketchScribble.onToolbarClicked(ev);
-  else
-    SketchData.onToolbarClicked(ev)
+  } else
+    if (modeScribbling)
+      SketchScribble.onToolbarClicked(ev);
+    else
+      SketchData.onToolbarClicked(ev)
 })
 
 
@@ -51,9 +55,10 @@ boardToolbar.mouseClicked((ev) => {
     <div class="mdc-dialog__content" id="dialog-info-content">
     <h4>一些快捷键</h4>
     <ul>
+      <li><span>按下 Alt 以切换涂画层的显示与否</span></li>
       <li><span>按住 Shift 键拖动创建一条连线</span></li>
-      <li><span>Ctrl+BackSapce 删除框选中的元素</span></li>
-      <li><span>按住 Cmd/Ctrl 点击元素以多选</span></li>
+      <li><span>Ctrl+BackSapce 删除框选的元素</span></li>
+      <li><span>按住 Ctrl 点击元素以多选</span></li>
     </ul>
     <h4>其他</h4>
     <ul>
@@ -109,7 +114,7 @@ let buttonInsertNode = p5Helper.createElement('div',
         <use href="#icontianjiajiedian" data-tooltype='insertNode'></use>
       </svg>
     </button>`)
-    buttonInsertNode.addClass('tooltip')
+buttonInsertNode.addClass('tooltip')
 
 dataToolBtns.push(buttonInsertNode)
 toolbarMiddleSection.child(buttonInsertNode)
@@ -121,7 +126,7 @@ let buttonInsert2DArray = p5Helper.createElement('div',
         <use href="#iconadd-node" data-tooltype='insert2DArray'></use>
       </svg>
     </button>`)
-    buttonInsert2DArray.addClass('tooltip')
+buttonInsert2DArray.addClass('tooltip')
 dataToolBtns.push(buttonInsert2DArray)
 toolbarMiddleSection.child(buttonInsert2DArray)
 
@@ -132,20 +137,31 @@ let buttonInsertMap = p5Helper.createElement('div',
         <use href="#iconkv" data-tooltype='insertMap'></use>
       </svg>
     </button>`)
-    buttonInsertMap.addClass('tooltip')
+buttonInsertMap.addClass('tooltip')
 dataToolBtns.push(buttonInsertMap)
 toolbarMiddleSection.child(buttonInsertMap)
 
-let buttonInfo= p5Helper.createElement('div',
-` <div class="tooltiptext">Info</div>
+let buttonInsertText = p5Helper.createElement('div',
+  `  <div class="tooltiptext">添加文本</div>
+  <button class="mdc-icon-button" data-tooltype='insertText'>
+      <svg  aria-hidden="true" data-tooltype='insertText'>
+        <use href="#iconwenben" data-tooltype='insertText'></use>
+      </svg>
+    </button>`)
+buttonInsertText.addClass('tooltip')
+dataToolBtns.push(buttonInsertText)
+toolbarMiddleSection.child(buttonInsertText)
+
+let buttonInfo = p5Helper.createElement('div',
+  ` <div class="tooltiptext">Info</div>
 <button class="mdc-icon-button" id="action-info"
    data-tooltype='info'>
    <svg  aria-hidden="true" data-tooltype='info'>
      <use xlink:href="#iconinfo" data-tooltype='info'></use>
    </svg>
  </button>`)
- buttonInfo.addClass('tooltip')
- toolbarLeftSection.child(buttonInfo)
+buttonInfo.addClass('tooltip')
+toolbarLeftSection.child(buttonInfo)
 
 
 let buttonCancel = p5Helper.createElement('div',
@@ -156,7 +172,7 @@ let buttonCancel = p5Helper.createElement('div',
        <use xlink:href="#iconchexiao" data-tooltype='cancel'></use>
      </svg>
    </button>`)
-   buttonCancel.addClass('tooltip')
+buttonCancel.addClass('tooltip')
 toolbarLeftSection.child(buttonCancel)
 
 let btnScribbleHandEmpty = p5Helper.createElement('div', `
@@ -167,7 +183,7 @@ let btnScribbleHandEmpty = p5Helper.createElement('div', `
     </svg>
   </button>
   `)
-  btnScribbleHandEmpty.addClass('tooltip')
+btnScribbleHandEmpty.addClass('tooltip')
 toolbarLeftSection.child(btnScribbleHandEmpty)
 
 
@@ -193,11 +209,11 @@ dataSketchContainer.id('dataSketch-container');
 // insertingIcon.style('visibility', 'hidden')
 // dataSketchContainer.child(insertingIcon)
 
-
+dataBoardContainer.attribute('tabindex', '-1');
 dataBoardContainer.child(boardToolbar);
 dataBoardContainer.child(dataSketchContainer);
 
-let leetcodeMainContainer:HTMLElement = document.querySelector("div[class^=main__]");
+let leetcodeMainContainer: HTMLElement = document.querySelector("div[class^=main__]");
 
 // let scribbleSketchContainer = p5Helper.createElement('div');
 // scribbleSketchContainer.parent(leetcodeMainContainer)
@@ -255,15 +271,16 @@ let btnScribbleHandLine = p5Helper.createElement('div', `
   `);
 scribbleToolBtns.push(btnScribbleHandLine)
 toolbarMiddleSection.child(btnScribbleHandLine)
-let btnScribbleHandText = p5Helper.createElement('div', `
-  <button class="mdc-icon-button" id="scribble-text" data-tooltype='text'>
-    <svg id="icon-scribble-text" aria-hidden="true" data-tooltype='text'>
-      <use xlink:href="#iconwenben" data-tooltype='text'></use>
-    </svg>
-  </button>
-  `);
-scribbleToolBtns.push(btnScribbleHandText)
-toolbarMiddleSection.child(btnScribbleHandText)
+
+// let btnScribbleHandText = p5Helper.createElement('div', `
+//   <button class="mdc-icon-button" id="scribble-text" data-tooltype='text'>
+//     <svg id="icon-scribble-text" aria-hidden="true" data-tooltype='text'>
+//       <use xlink:href="#iconwenben" data-tooltype='text'></use>
+//     </svg>
+//   </button>
+//   `);
+// scribbleToolBtns.push(btnScribbleHandText)
+// toolbarMiddleSection.child(btnScribbleHandText)
 
 
 
@@ -274,8 +291,21 @@ let leftResizebar = rightResizebar.cloneNode(true) as HTMLElement;
 
 rightResizebar.remove();
 rightResizebar = leftResizebar.cloneNode(true) as HTMLElement;
-let leftContainer: HTMLElement = document.querySelector("div[class^=css-][class*=-LeftContainer]")
-let rightContainer: HTMLElement = document.querySelector("div[class^=css-][class*=-RightContainer]")
+
+// let leftContainerReal:HTMLElement =document.querySelector("div[class^=css-][class*=-LeftContainer]");
+
+// let leftContainer: HTMLElement = leftContainerReal.cloneNode(true) as HTMLElement;
+// leftContainerReal.after(leftContainer)
+// leftContainerReal.remove();
+let leftContainer = document.querySelector("div[class^=css-][class*=-LeftContainer]") as HTMLElement;
+
+
+// let rightContainerReal=document.querySelector("div[class^=css-][class*=-RightContainer]") as HTMLElement;
+// let rightContainer: HTMLElement = rightContainerReal.cloneNode(true) as HTMLElement;
+// rightContainerReal.after(rightContainer)
+// rightContainerReal.remove();
+
+let rightContainer: HTMLElement = document.querySelector("div[class^=css-][class*=-RightContainer]") as HTMLElement;
 
 leetcodeMainContentBar.insertBefore(rightResizebar, rightContainer)
 leetcodeMainContentBar.insertBefore(leftResizebar, rightResizebar)
@@ -285,66 +315,146 @@ leetcodeMainContentBar.insertBefore(dataBoardContainer.elt, rightResizebar)
 const resizebarWidth = 10;
 const leftContainerStuckWidth = 320
 const rightContainerStuckWidth = 320;
-let leftContainerWidth = leftContainerStuckWidth
-let rightContainerWidth = rightContainerStuckWidth
-let boardWidth = document.body.scrollWidth - leftContainerWidth - rightContainerWidth
+let leftContainerWidth = document.body.clientWidth / 3
+let rightContainerWidth = document.body.clientWidth / 3;
+let boardWidth = document.body.clientWidth - leftContainerWidth - rightContainerWidth - 2 * resizebarWidth
 boardWidth = boardWidth > 0 ? boardWidth : 0;
 
 leftContainer.style.width = `${leftContainerWidth}px`
 rightContainer.style.width = `${rightContainerWidth}px`
 
-window.setTimeout(() => {
-  leftContainer.style.flex = `0 0 auto`
-  leftContainer.style.minWidth = `${leftContainerStuckWidth}px`
-  dataBoardContainer.style("flex", `1 0 0px`);
-  rightContainer.style.flex = `0 0 auto`
-  rightContainer.style.minWidth = `${rightContainerStuckWidth}px`
+// window.setTimeout(() => {
 
-  leetcodeMainContainer.style.zIndex='2';
-}, 200)
+// }, 200)
 
-
+leftContainer.style.flex = `1 1 auto`
+leftContainer.style.minWidth = `${leftContainerStuckWidth}px`
+dataBoardContainer.style("flex", `1 1 auto`);
+dataBoardContainer.style("min-width", "min-content")
+rightContainer.style.flex = `1 1 auto`
+rightContainer.style.minWidth = `${rightContainerStuckWidth}px`
+leetcodeMainContainer.style.zIndex = '2';
+console.log("flex set")
+debugger
 window.onresize = () => {
 
 }
-rightResizebar.onmousedown = (ev: MouseEvent) => {
+
+rightResizebar.addEventListener('mousedown',
+  (ev: MouseEvent) => {
+    let lastX = ev.clientX;
+
+    document.onmousemove = (ev: MouseEvent) => {
+      //更新”收起画板“按钮的缩略状态
+      updateFoldBtn()
+      //当前鼠标（想要拖去的位置）与用实际 width 计算出来的位置的偏移量。
+      let deltaX = ev.clientX - (document.body.clientWidth - rightContainer.clientWidth)
+      lastX = ev.clientX;
+      //折叠时，左部分就是 leftcontianer ，不折叠时，先相对于 databoard 左右伸缩，
+      let leftPart = boardFolded ? leftContainer : dataBoardContainer.elt as HTMLElement
+      let oldClientWidth
+      {
+        if (deltaX <= 0) {
+          oldClientWidth = leftPart.clientWidth;
+          leftPart.style.width = `${leftPart.clientWidth + deltaX}px`;
+          //当 databoard minwidth 时，再推动leftcontianer 移动
+          if (!boardFolded && leftPart.clientWidth == oldClientWidth) {
+            leftPart = leftContainer;
+            oldClientWidth = leftPart.clientWidth;
+            leftPart.style.width = `${leftPart.clientWidth + deltaX}px`;
+            //只有 databoard min 且 leftcontainer 也 min 了 ，才取消这次推动
+            if (leftPart.clientWidth == oldClientWidth)
+              return
+          }
+        
+          rightContainer.style.width = `${rightContainer.clientWidth - deltaX}px`
+        } else {
+          oldClientWidth = rightContainer.clientWidth;
+          rightContainer.style.width = `${rightContainer.clientWidth - deltaX}px`
+          if (rightContainer.clientWidth == oldClientWidth)
+            return;
+          leftPart.style.width = `${leftPart.clientWidth + deltaX}px`
+        }
+      }
 
 
-  document.onmousemove = (ev: MouseEvent) => {
 
 
-    rightContainerWidth = document.body.clientWidth - ev.pageX - resizebarWidth / 2;
-    if (rightContainerWidth < rightContainerStuckWidth) rightContainerWidth = rightContainerStuckWidth;
-    boardWidth = (document.body.clientWidth - rightContainerWidth - leftContainerWidth - 2 * resizebarWidth);
+      // //总宽度-鼠标 x=右宽
+      // rightContainerWidth = document.body.clientWidth - ev.pageX - resizebarWidth / 2;
 
-    if (boardWidth < 0) {
-      rightContainerWidth = (document.body.clientWidth - leftContainerWidth - 2 * resizebarWidth);
-      boardWidth = 0;
+      // // if (rightContainerWidth < rightContainerStuckWidth) rightContainerWidth = rightContainerStuckWidth;
+
+      // if (boardFolded) {
+      //   boardWidth = 0;
+      //   leftContainerWidth = document.body.clientWidth - ev.pageX - resizebarWidth;
+      // } else {
+      //   boardWidth = (document.body.clientWidth - rightContainerWidth - leftContainerWidth - 2 * resizebarWidth);
+      //   // if (boardWidth < 0) {
+      //   //   rightContainerWidth = (document.body.clientWidth - leftContainerWidth - 2 * resizebarWidth);
+      //   //   boardWidth = 0;
+      //   // }
+      // }
+
+      // updateContainersWithWidth()
     }
+    document.onmouseup = (ev: MouseEvent) => {
+      document.onmousemove = null;
+      document.onmouseup = null;
+    }
+  }
+)
+// rightResizebar.onmousedown = 
 
-    leftContainer.style.width = `${leftContainerWidth}px`
-    rightContainer.style.width = `${rightContainerWidth}px`
-  }
-  document.onmouseup = (ev: MouseEvent) => {
-    document.onmousemove = null;
-    document.onmouseup = null;
-  }
-}
 
 leftResizebar.onmousedown = (ev: MouseEvent) => {
+  let lastX = ev.clientX;
 
   document.onmousemove = (ev: MouseEvent) => {
+    updateFoldBtn()
+    let deltaX = ev.clientX - leftContainer.clientWidth
+    lastX = ev.clientX;
+    let rightPart = boardFolded ? rightContainer : dataBoardContainer.elt as HTMLElement
+    let oldClientWidth
+    {
+      if (deltaX >= 0) {
 
-    leftContainerWidth = ev.pageX - resizebarWidth / 2;
-    if (leftContainerWidth < leftContainerStuckWidth) leftContainerWidth = leftContainerStuckWidth;
-    boardWidth = (document.body.scrollWidth - rightContainerWidth - leftContainerWidth - 2 * resizebarWidth);
-    if (boardWidth < 0) {
-      leftContainerWidth = (document.body.scrollWidth - rightContainerWidth - 2 * resizebarWidth);
-      boardWidth = 0;
+        oldClientWidth = rightPart.clientWidth;
+        rightPart.style.width = `${rightPart.clientWidth - deltaX}px`;
+        if (!boardFolded && rightPart.clientWidth == oldClientWidth) {
+          rightPart = rightContainer;
+          oldClientWidth = rightPart.clientWidth;
+          rightPart.style.width = `${rightPart.clientWidth - deltaX}px`;
+          if (rightPart.clientWidth == oldClientWidth)
+            return
+        }
+        leftContainer.style.width = `${leftContainer.clientWidth + deltaX}px`
+      } else {
+        oldClientWidth = leftContainer.clientWidth;
+        leftContainer.style.width = `${leftContainer.clientWidth + deltaX}px`
+        if (leftContainer.clientWidth == oldClientWidth)
+          return;
+        rightPart.style.width = `${rightPart.clientWidth - deltaX}px`
+      }
     }
 
-    leftContainer.style.width = `${leftContainerWidth}px`
-    rightContainer.style.width = `${rightContainerWidth}px`
+
+
+    leftContainerWidth = ev.pageX - resizebarWidth / 2;
+    // if (leftContainerWidth < leftContainerStuckWidth) leftContainerWidth = leftContainerStuckWidth;
+
+    // if (boardFolded) {
+    //   boardWidth = 0;
+    //   rightContainerWidth = document.body.clientWidth - resizebarWidth - leftContainerWidth;
+    // } else {
+    //   boardWidth = (document.body.clientWidth - rightContainerWidth - leftContainerWidth - 2 * resizebarWidth);
+
+    //   // if (boardWidth < 0) {
+    //   //   leftContainerWidth = (document.body.scrollWidth - rightContainerWidth - 2 * resizebarWidth);
+    //   //   boardWidth = 0;
+    //   // }
+    // }
+    // updateContainersWithWidth()
 
   }
   document.onmouseup = (ev: MouseEvent) => {
@@ -354,7 +464,11 @@ leftResizebar.onmousedown = (ev: MouseEvent) => {
 }
 
 
-
+function updateContainersWithWidth() {
+  leftContainer.style.width = `${leftContainerWidth}px`
+  rightContainer.style.width = `${rightContainerWidth}px`
+  dataBoardContainer.style("width", `${boardWidth}px`)
+}
 
 // import mdTheme from './mdTheme.scss'
 export let modeScribbling = false;
@@ -370,9 +484,9 @@ export let switchScribbleMode = function () {
 
 
 function onSwitchScribbleMode() {
-  
+
   let scribbleCanvas = p5Helper.select('#scribble-canvas');
-  let cancelTiptextEle=p5Helper.select('#cancel-tiptext')
+  let cancelTiptextEle = p5Helper.select('#cancel-tiptext')
   if (modeScribbling) {
 
     cancelTiptextEle.html('撤销创建')
@@ -392,7 +506,7 @@ function onSwitchScribbleMode() {
 
   } else {
     cancelTiptextEle.html('撤销删除')
-    if(SketchScribble.subdock) SketchScribble.subdock.remove();
+    if (SketchScribble.subdock) SketchScribble.subdock.remove();
     scribbleToolBtns.forEach(view => {
       view.hide()
     });
@@ -413,6 +527,71 @@ function onSwitchScribbleMode() {
 onSwitchScribbleMode();
 
 
+
+export let boardFolded = false;
+let foldBtnWrapperPre = document.querySelector("div[class*=u3sowt-TabHeader][class*=e16udao4][data-key=submissions]")
+let foldBtnWrapper = foldBtnWrapperPre.cloneNode(false) as HTMLElement;
+foldBtnWrapperPre.after(foldBtnWrapper);
+
+// .cloneNode(false) as HTMLElement;
+foldBtnWrapper.appendChild(document.querySelector("div[class*=u3sowt-TabHeader][class*=e16udao4]>a>div").cloneNode(true));
+foldBtnWrapper.querySelector("svg").remove();
+let foldBtnContent = foldBtnWrapper.querySelector("span>div") as HTMLElement
+updateFoldBtn();
+
+
+foldBtnWrapper.onclick = (ev: MouseEvent) => {
+  boardFolded = !boardFolded
+
+  onBoardFoldedChange(boardFolded)
+
+}
+function updateFoldBtn() {
+  let symbol = foldBtnWrapperPre.querySelector("svg").parentElement.innerText
+
+  if (boardFolded) {
+    if (symbol.length == 0) {
+      foldBtnContent.innerText = "<>"
+    } else if (symbol.length == 2) {
+      foldBtnContent.innerText = "<> 开板"
+    } else
+      foldBtnContent.innerText = "<> 展开画板"
+
+  } else {
+    if (symbol.length == 0) {
+      foldBtnContent.innerText = "><"
+    } else if (symbol.length == 2) {
+      foldBtnContent.innerText = ">< 收板"
+    } else
+      foldBtnContent.innerText = ">< 收起画板"
+  }
+}
+
+function onBoardFoldedChange(boardFolded: boolean) {
+  updateFoldBtn()
+  if (boardFolded) {
+
+    SketchData.pInst.noLoop();
+    SketchScribble.scribble_pInst.noLoop();
+    dataBoardContainer.style("display", "none");
+
+    // rightResizebar.style.display = 'none';
+
+    // dataBoardContainer.hide();
+    // updateContainersWithWidth()
+  } else {
+    // leftContainerWidth = document.body.clientWidth * 0.33637
+    // rightContainerWidth = 560;
+    // updateContainersWithWidth()
+    // rightResizebar.style.display = '';
+    dataBoardContainer.style("display", "");
+    SketchData.pInst.loop();
+    if (modeScribbling)
+      SketchScribble.scribble_pInst.loop();
+
+  }
+
+}
 
 
 
