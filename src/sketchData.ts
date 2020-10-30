@@ -542,10 +542,13 @@ function deleteSelected() {
 
 interface buildItem {
   node: LBNode;
+  //当前子树的左右
   left: number;
   right: number;
+  //当前树根的 y
   y: number;
 }
+//反序列化 ，按行来，每一行节点数为上一行有效节点两倍
 function insertBinarytreeWithArray(pos: Vector, contents: Array<string>) {
   if(contents==null||contents.length==0) return;
   let lastFloor: Array<buildItem> = new Array<buildItem>();

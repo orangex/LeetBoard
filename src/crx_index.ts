@@ -62,7 +62,7 @@ boardToolbar.mouseClicked((ev) => {
     </ul>
     <h4>其他</h4>
     <ul>
-      <li><span>亲测 Adblock 插件可能会导致卡顿掉帧，建议暂时停用</span></li>
+      <li><span>亲测 Adblock 插件可能会导致卡顿掉帧，建议暂时对该站点停用</span></li>
       <li><span>反馈、建议：</span><a href='mailto:rampaging9@gmail.com' target='_blank'
             class='url'>rampaging9@gmail.com</a></li>
     </ul>
