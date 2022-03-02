@@ -23,19 +23,19 @@ Chrome 不再允许拖动 .crx 直接安装拓展，点击[这里](https://chrom
 
 - 快速添加元素
 
-  ![](https://s1.ax1x.com/2020/03/31/GKQ7gx.gif)
+  ![](https://github.com/orangex/LeetBoard/blob/master/readmeRes/insert.gif?raw=true)
 
 - 将格式化的数组、树可视化
 
-  ![](https://s1.ax1x.com/2020/03/31/GKQLDO.gif)
+  ![](https://github.com/orangex/LeetBoard/blob/master/readmeRes/paste.gif?raw=true)
 
 - 元素提供简单的交互
 
-  ![](https://s1.ax1x.com/2020/03/31/GKQjVe.gif)
+  ![](https://github.com/orangex/LeetBoard/blob/master/readmeRes/edit.gif?raw=true)
 
 - 一个可以呼出的涂画层
 
-  ![](https://s1.ax1x.com/2020/03/31/GKQx5d.gif)
+  ![](https://github.com/orangex/LeetBoard/blob/master/readmeRes/scribble.gif?raw=true)
 
   
 
